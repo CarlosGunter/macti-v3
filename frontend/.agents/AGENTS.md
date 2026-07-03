@@ -9,7 +9,7 @@ Este archivo contiene las pautas y restricciones específicas para los agentes q
 
 ## Desarrollo Frontend
 
-- Sigue las convenciones establecidas en el proyecto (TypeScript, React/Vite, etc.) según la estructura existente en `frontend/`.
+- Sigue las convenciones establecidas en el proyecto (TypeScript, React/Next.js, etc.) según la estructura existente en `frontend/`.
 - Mantén el diseño limpio, responsivo y fiel a los estilos visuales definidos en el código.
 
 ## Indicaciones del código

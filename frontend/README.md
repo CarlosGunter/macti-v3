@@ -4,80 +4,88 @@
 
 Una plataforma educativa moderna construida con Next.js que alberga materiales didácticos, haciendo énfasis en ejemplos prácticos y aplicaciones de conceptos abstractos para cursos semestrales de Análisis Numérico y Ecuaciones Diferenciales.
 
-## ✨ Características
+---
 
-- 🚀 **Next.js 15.5.3** - Framework React de última generación
-- ⚡ **React 19** - UI declarativa y eficiente
-- 🎨 **Tailwind CSS 4** - Estilos utilitarios modernos
-- 📝 **TypeScript** - Tipado estático para mayor robustez
-- 🔧 **ESLint** - Linting y análisis de código
-- 📦 **pnpm** - Gestor de paquetes rápido y eficiente
+## ✨ Tecnologías y Herramientas
+
+- **Framework**: Next.js 16 (App Router)
+- **UI & React**: React 19 y Tailwind CSS 4
+- **Lenguaje**: TypeScript
+- **Gestión de Estado**: Zustand
+- **Peticiones y Servidor**: TanStack React Query
+- **Autenticación**: Better Auth
+- **Linter & Formateador**: Biome (más rápido y estricto que ESLint/Prettier)
+- **Gestor de Paquetes**: pnpm
+
+---
 
 ## 🏗️ Estructura del Proyecto
 
+La estructura de código dentro del directorio `src/` está organizada de la siguiente manera:
+
 ```
 src/
-├── app/                    # App Router de Next.js
-│   ├── [institute]/       # Rutas dinámicas por instituto
-│   └── globals.css        # Estilos globales
-├── domains/               # Dominios de negocio
-│   ├── auth/             # Autenticación
-│   └── home/             # Página principal
-├── assets/               # Recursos estáticos
-│   ├── image/           # Imágenes
-│   └── logos/           # Logotipos
-├── shared/              # Código compartido
-│   ├── components/      # Componentes reutilizables
-│   ├── config/         # Configuraciones
-│   └── services/       # Servicios
-└── lib/                # Utilidades y helpers
+├── app/                    # App Router de Next.js (Rutas y vistas)
+│   ├── [institute]/       # Rutas dinámicas basadas en el instituto
+│   └── globals.css        # Estilos globales y Tailwind CSS
+├── domains/               # Lógica y dominios de negocio
+│   ├── auth/             # Módulo de autenticación y lógica asociada
+│   └── home/             # Componentes y lógica de la página de inicio
+├── assets/               # Recursos estáticos locales
+│   ├── image/           # Imágenes generales
+│   └── logos/           # Logotipos institucionales
+├── shared/              # Código reutilizable y compartido
+│   ├── components/      # Componentes UI reutilizables (shadcn/radix)
+│   ├── config/         # Configuraciones globales
+│   └── services/       # Clientes de APIs y llamadas de red
+└── lib/                # Utilidades, clases helpers y formateadores
 ```
+
+---
 
 ## 🚀 Inicio Rápido
 
-### 📋 Prerrequisitos
+### Prerrequisitos
 
 - **Node.js** >= 18.17.0
-- **pnpm** (recomendado) o npm
+- **pnpm** (Gestor de paquetes obligatorio)
 
-### 📦 Instalación de pnpm
-
-Si no tienes pnpm instalado, puedes instalarlo de las siguientes maneras:
-
-```powershell
-# Usando npm
-npm install -g pnpm
-
+### 1. Clonar el Repositorio
+```bash
+git clone https://github.com/CarlosGunter/macti-monorepo
+cd macti-monorepo/frontend
 ```
-O visita la guía oficial completa: https://pnpm.io/installation
 
-### 🔧 Instalación del Proyecto
+### 2. Instalar Dependencias
+Se debe utilizar exclusivamente `pnpm` para la gestión de dependencias del frontend:
+```bash
+pnpm install
+```
 
-1. **Clona el repositorio**
-   ```powershell
-   git clone https://github.com/CarlosGunter/macti-frontend
-   cd macti-frontend
-   ```
+### 3. Ejecutar el Proyecto
+Para iniciar el servidor de desarrollo local:
+```bash
+pnpm dev
+```
 
-2. **Instala las dependencias**
-   ```powershell
-   pnpm install
-   ```
+El servidor estará corriendo en [http://localhost:3000](http://localhost:3000).
 
-3. **Inicia el servidor de desarrollo**
-   ```powershell
-   pnpm dev
-   ```
-
-4. **¡Abre tu navegador!** 🌐
-   
-   Visita [http://localhost:3000](http://localhost:3000) para ver la aplicación en funcionamiento.
+---
 
 ## 📜 Scripts Disponibles
 
 | Script | Descripción | Comando |
 |--------|-------------|---------|
-| 🔥 **dev** | Inicia el servidor de desarrollo | `pnpm dev` |
-| 🏗️ **build** | Construye la aplicación para producción | `pnpm build` |
-| 🚀 **start** | Inicia el servidor de producción | `pnpm start` |
-| 🔍 **lint** | Ejecuta el linter de código | `pnpm lint` |
+| `dev` | Inicia el servidor de desarrollo | `pnpm dev` |
+| `build` | Compila la aplicación optimizada para producción | `pnpm build` |
+| `start` | Inicia el servidor de Next.js en producción | `pnpm start` |
+| `lint` | Ejecuta Biome para analizar y formatear el código | `pnpm lint` |
+
+---
+
+## 🔧 Desarrollo y Reglas de Calidad
+
+Cualquier cambio realizado en este repositorio debe respetar las directivas especificadas en [frontend/.agents/AGENTS.md](.agents/AGENTS.md):
+- **Docstrings & Comentarios**: Es mandatorio documentar componentes y funciones importantes utilizando JSDoc.
+- **Formateo**: Ejecuta `pnpm lint` antes de realizar tus confirmaciones para corregir el estilo del código con Biome.
+- **Mensajes de Commit**: Deben redactarse obligatoriamente en **español**, en **tiempo pasado** y seguir la convención de **Conventional Commits** sin omitir detalles de los cambios realizados.

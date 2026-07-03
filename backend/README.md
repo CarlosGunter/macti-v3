@@ -1,20 +1,53 @@
 # 🚀 MACTI API
 
-> Una API desarrollada con FastAPI para la gestión de cuentas de usuario y autenticación integrada con Keycloak y Moodle.
+> Una API desarrollada con FastAPI para la gestión de cuentas de usuario, identidades y recursos académicos integrada con Keycloak y Moodle en la UNAM.
 
 ---
 
-## 🛠️ Tecnologías Utilizadas
+## 🛠️ Tecnologías y Herramientas
 
-- **Framework**: FastAPI
-- **Base de Datos**: SQLite con SQLAlchemy 2
-- **Validación**: Pydantic 2
-- **Servidor**: Uvicorn
-- **Autenticación**: Integración con Keycloak
-- **Documentación**: Swagger UI y ReDoc (automática con FastAPI)
-- **Gestión de Dependencias**: uv
+- **Framework**: FastAPI (estándar)
+- **Gestión de Entorno y Dependencias**: [uv](https://astral.sh/uv/) (Astral)
+- **Base de Datos**: PostgreSQL (producción) y SQLite (desarrollo local)
+  - Mapeado con SQLAlchemy 2.0.
+  - Migraciones gestionadas por Alembic (únicamente para PostgreSQL / producción).
+- **Validación de Datos**: Pydantic v2 (esquemas y configuraciones)
+- **Servidor**: FastAPI CLI / Uvicorn
+- **Caché y Almacenamiento**: Redis (cliente asíncrono)
 - **Linter y Formateo**: Ruff
-- **Control de Calidad**: Pre-commit 4
+- **Control de Calidad**: Pre-commit hooks (configurados localmente)
+
+---
+
+## 📁 Estructura del Proyecto (Variante de MVCS)
+
+El backend está diseñado bajo una arquitectura modular y desacoplada basada en una **variante de MVCS** con las siguientes carpetas principales dentro de `app/`:
+
+```
+backend/
+├── app/                           # Código fuente principal
+│   ├── main.py                    # Punto de entrada y ciclo de vida de la aplicación
+│   │
+│   ├── core/                      # Configuración central del sistema
+│   │   ├── db/                    # Motores de base de datos sqlite y postgres
+│   │   ├── environment.py         # Centralización de variables de entorno (Pydantic Settings)
+│   │   └── logging/               # Configuración del logger global (Loguru)
+│   │
+│   ├── shared/                    # Código y dependencias compartidos
+│   │   ├── models/                # Modelos SQLAlchemy globales (Registrados en __init__.py)
+│   │   ├── services/              # Clientes de uso global (como redis_client)
+│   │   └── dependencies/          # Inyección de dependencias de FastAPI (sesión de BD, Auth)
+│   │
+│   └── modules/                   # Módulos de funcionalidad independientes
+│       ├── register/              # Módulo de registro (Ejemplo)
+│       │   ├── routes.py          # Enrutadores, endpoints y dependencias
+│       │   ├── schemas.py         # Validación de datos de petición y respuesta (Pydantic)
+│       │   ├── controllers/       # Controladores de la lógica de negocio y excepciones HTTP
+│       │   ├── repositories/      # Capa de base de datos dedicada (SQLAlchemy)
+│       │   ├── use_cases/         # (Opcional) Funciones y lógica reutilizable entre controladores
+│       │   └── services/          # (Opcional) Consumo de APIs externas únicamente
+│       └── courses/               # Módulo de cursos
+```
 
 ---
 
@@ -22,117 +55,42 @@
 
 ### Prerrequisitos
 
-- Python 3.8+
-- UV (gestor de paquetes de Python)
+- Python >= 3.12
+- [uv](https://astral.sh/uv/) (gestor de paquetes de Python)
 
 ### 1. Clonar el Repositorio
-
 ```bash
-# Clonar el repositorio
-git clone https://github.com/CarlosGunter/macti-api
-cd macti-api
+git clone https://github.com/CarlosGunter/macti-monorepo
+cd macti-monorepo/backend
 ```
 
-### 2. Instalar uv
-
-Para linux/macOS, ejecuta:
+### 2. Configuración de Variables de Entorno
+Copia el archivo de ejemplo y configura tus variables:
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+cp .env.example .env
 ```
+> [!IMPORTANT]
+> **Cualquier nueva variable de entorno** que sea requerida por el backend debe declararse obligatoriamente tanto en `app/core/environment.py` como en `.env.example`.
 
-Para Windows:
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-Puedes encontrar más detalles en la [documentación oficial de uv](https://docs.astral.sh/uv/getting-started/installation/).
-
-> [!TIP]
-> uv se encarga de crear y gestionar entornos virtuales automáticamente. Por lo tanto, no es necesario crear uno manualmente.
-
-### 3. Ejecutar el proyecto
+### 3. Ejecutar el Proyecto
+Para iniciar el servidor de desarrollo utilizando la CLI de FastAPI con recarga automática:
 ```bash
 uv run fastapi dev
 ```
 
-Éste comando hará lo siguiente:
-- Instalar las dependencias listadas en `pyproject.toml` si no están instaladas.
-- Crear un entorno virtual aislado para el proyecto si no existe.
-- Iniciar el servidor de desarrollo utilizando la CLI de FastAPI con recarga automática.
-- Iniciará la BD SQLite si no existe.
-- Ejecutar las migraciones de la base de datos si es necesario.
-
-### 4. Configurar Hooks de Pre-Commit
-
-```bash
-# Instalar hooks de pre-commit
-uv run pre-commit install
-```
-
-### 5. Acceder a la API
-Por defecto, FastAPI corre en el puerto 8000. Por lo tanto, los endpoints estarán disponibles en:
-
-- **API Base**: http://localhost:8000
-- **Documentación Swagger**: http://localhost:8000/docs
-- **Documentación ReDoc**: http://localhost:8000/redoc
-
-Si deseas cambiar el puerto o la dirección, puedes modificar los parámetros en el comando de la siguiente manera:
-
+Si deseas modificar el puerto o la dirección host:
 ```bash
 uv run fastapi dev --host 0.0.0.0 --port 8000
 ```
 
 ---
 
-## 📁 Estructura del Proyecto
+## 🔧 Desarrollo y Reglas de Calidad
 
-```
-backend-py/
-│
-├── 📄 README.md                   # Este archivo
-├── 📄 pyproject.toml              # Configuración del proyecto
-│
-└── app/                           # Código fuente principal
-    ├── 📄 main.py                # Punto de entrada de la aplicación
-    │
-    ├── core/                      # Núcleo de la aplicación
-    │   └── 📄 database.py        # Configuración de base de datos
-    │   └── 📄 environment.py     # Centralización de las variables de entorno
-    │
-    ├── modules/                  # Módulos de funcionalidad
-    │   ├── auth/                 # Módulo de autenticación
-    │   │   ├── 📄 controllers    # Lógica de negocio
-    │   │   ├── 📄 models         # Modelos de base de datos
-    │   │   ├── 📄 routes         # Definición de endpoints
-    │   │   ├── 📄 schemas        # Esquemas de validación
-    │   │   └── 📄 services       # Servicios externos como llamadas a APIs
-    │   │
-    │   └── courses/               # Módulo de cursos
-    │
-    └── shared/                    # Modulo general compartido
-```
-
----
-
-## 🔧 Desarrollo
-
-### Entorno y rutas temporales
-
-- Define `APP_ENV` en tu `.env` con uno de estos valores: `development`, `testing`, `production`.
-- Las rutas del módulo temporal (`/temp/*`) solo se registran cuando `APP_ENV=development`.
-
-### Agregar Nuevos Endpoints
-
-1. Define o crea el modulo donde quieres agregar el endpoint (ej. `auth`, `courses`).
-2. Crea tu endpoint en el archivo `routes.py` del módulo correspondiente.
-3. Implementa la lógica de negocio en `controllers.py` y los modelos de datos en los modelos.
-4. Agrega validación de datos con Pydantic en `schemas.py`.
-5. Si necesitas llamar a servicios externos, implementa esa lógica en `services.py`.
-
-### Flujo de Trabajo
-
-Puedes seguir el flujo de trabajo descrito en el archivo `CONTRIBUTING.md` para contribuir al proyecto.
-
-No olvides ejecutar el paso 4 de configuración de hooks de pre-commit después de clonar el repositorio.
-
----
+Los cambios realizados en esta capa deben cumplir estrictamente las normas descritas en [backend/.agents/AGENTS.md](.agents/AGENTS.md):
+- **Acceso a Base de Datos**: Todo manejo de datos de SQLAlchemy debe estar encapsulado en un **Repository** dentro del módulo correspondiente. No se permite realizar consultas directas de base de datos en controladores o rutas.
+- **SQLite (Desarrollo)**: **No se deben generar archivos de migración de Alembic para SQLite**. Si realizas cambios en los modelos para tu entorno local de pruebas, simplemente elimina el archivo local `macti.db` para que el sistema cree la base de datos limpia al iniciar la app.
+- **Servicios**: La capa de `services` en los módulos se reserva **exclusivamente para el consumo de APIs externas** (no se utiliza como servicios clásicos de MVCS).
+- **Docstrings**: Es mandatorio **generar y mantener actualizados los docstrings** para documentar todas las clases, métodos y funciones del código.
+- **Formateo**: Ejecuta `uv run ruff check --fix` y `uv run ruff format` para verificar que el código cumple con los estándares de estilo antes de hacer commit.
+- **Commits**: Los mensajes de confirmación deben redactarse en **español**, en **tiempo pasado** y utilizando la convención de **Conventional Commits** ordenando los cambios en el cuerpo por orden de importancia.
