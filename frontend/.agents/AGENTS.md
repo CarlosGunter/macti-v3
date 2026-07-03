@@ -1,4 +1,4 @@
-# Reglas del Proyecto
+# Reglas del Proyecto Frontend
 
 Este archivo contiene las pautas y restricciones específicas para los agentes que trabajen en este proyecto frontend.
 
@@ -14,8 +14,27 @@ Este archivo contiene las pautas y restricciones específicas para los agentes q
 
 ## Indicaciones del código
 - **No comentes código innecesariamente**: Evita dejar comentarios sobre los cambios realizados, a menos que sean realmente necesarios para la comprensión del código.
-- **Documentación**: Asegúrate de documentar y mantener actualizadas las funciones y componentes importantes, especialmente aquellos que forman parte de la API pública del proyecto. Utiliza comentarios JSDoc para funciones y componentes.
+- **JSDoc/Comentarios**: El agente **debe generar y mantener actualizados los JSDoc y comentarios** de todo el código de componentes o utilitarios que escriba o modifique.
 
-## Git y Control de Versiones
-- **Utiliza conventional commits**: Sigue las convenciones de mensajes de commit para mantener un historial claro y comprensible.
-- **PRs con Descripción Clara**: Al crear Pull Requests, proporciona una descripción detallada de los cambios realizados, incluyendo el propósito y cualquier contexto relevante.
+## 🔄 Git y Control de Versiones
+
+### Convención de Mensajes de Confirmación (Conventional Commits)
+Los mensajes de commit deben seguir una estructura clara y estandarizada:
+- **Estructura**: `<tipo>(<alcance opcional>): <descripción>` seguida de un cuerpo y pie de página si es necesario.
+- **Tipos de Commit permitidos**:
+  - `feat`: Añade una nueva característica o funcionalidad.
+  - `fix`: Resuelve un error o bug.
+  - `docs`: Modifica o añade documentación.
+  - `style`: Cambios de estilo y formato (espacios, formateo de código, punto y coma, etc.) sin afectar el comportamiento o semántica del código. Esto nunca aplica para cambios en los estilos visuales de la aplicación (CSS, SCSS, Tailwind, etc.).
+  - `refactor`: Reorganización de código que no corrige un error ni añade funcionalidad.
+  - `perf`: Mejoras de rendimiento.
+  - `test`: Añade o corrige pruebas.
+  - `build`: Cambios que afectan el sistema de empaquetado o dependencias externas (ej. configuraciones de pnpm).
+  - `ci`: Cambios en la configuración de integración o despliegue continuo (CI/CD).
+  - `chore`: Tareas de mantenimiento o configuración del proyecto.
+- **Idioma**: Los mensajes de confirmación deben redactarse obligatoriamente en **español**.
+- **Tiempo verbal**: La descripción debe estar redactada en **tiempo pasado** (ej. `feat: se implementó inicio de sesión`, `fix: se corrigió error en base de datos`).
+- **Cuerpo del mensaje**: Si hay varios cambios importantes, enuméralos en el cuerpo del mensaje de confirmación, ordenándolos de **mayor a menor importancia**.
+
+### Pull Requests (PRs)
+- Al crear una PR, es obligatorio incluir una descripción clara, estructurada e informativa que detalle con precisión todos los cambios realizados en la rama y el propósito de los mismos.
