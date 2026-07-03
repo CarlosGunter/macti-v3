@@ -73,4 +73,3 @@ La API y su documentación interactiva (Swagger UI) estarán en [http://localhos
 
 ---
 
-*Desarrollado con ❤️ para enriquecer el aprendizaje y la enseñanza del Análisis Numérico y las Ecuaciones Diferenciales.*
