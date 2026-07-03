@@ -15,6 +15,7 @@ Este archivo contiene las pautas y restricciones específicas para los agentes q
 ## Indicaciones del código
 - **No comentes código innecesariamente**: Evita dejar comentarios sobre los cambios realizados, a menos que sean realmente necesarios para la comprensión del código.
 - **JSDoc/Comentarios**: El agente **debe generar y mantener actualizados los JSDoc y comentarios** de todo el código de componentes o utilitarios que escriba o modifique.
+- **Actualización de README**: Si las modificaciones realizadas en el frontend afectan la estructura de directorios, agregan dependencias importantes o alteran scripts y flujos de arranque, se debe **actualizar el archivo README.md del frontend** de forma obligatoria para reflejar dichos cambios.
 
 ## 🔄 Git y Control de Versiones
 

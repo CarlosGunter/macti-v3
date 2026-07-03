@@ -102,6 +102,7 @@ uv run fastapi dev
 6. **Manejo de Errores**: Lanza siempre excepciones `fastapi.HTTPException` con códigos de estado semánticos y detalles en formato de diccionario estructurado (por ejemplo, `{"error_code": "CODIGO", "message": "Detalle del error"}`).
 7. **Formateo**: Sigue la ordenación de importaciones requerida por Ruff. Ejecuta `uv run ruff check --fix` y `uv run ruff format` después de editar archivos.
 8. **No comentes innecesariamente**: Evita comentarios redundantes sobre los cambios en el código fuente. Escribe código autoexplicativo y prioriza docstrings claros y actualizados.
+9. **Actualización de README**: Si las modificaciones del código afectan la estructura del proyecto, agregan variables de entorno o dependencias clave, o alteran los comandos de ejecución, se debe **actualizar el archivo README.md del backend** de forma mandatoria para reflejar dichos cambios.
 
 ---
 
