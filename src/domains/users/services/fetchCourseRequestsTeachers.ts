@@ -9,16 +9,17 @@ export async function fetchCourseRequestsTeachers({
   institute,
   status,
 }: CourseRequestsTeachersPayload): Promise<CourseRequestsTeachersProps> {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
   const queryParams = new URLSearchParams({
     institute,
   });
-
   if (status) {
     queryParams.append("status", status);
   }
 
   const listRequestPromise = fetch(
-    `/api/proxy/${institute}/register/list-account-requests/teachers?${queryParams.toString()}`,
+    `${basePath}/api/proxy/${institute}/register/list-account-requests/teachers?${queryParams.toString()}`,
     {
       method: "GET",
       cache: "no-store",

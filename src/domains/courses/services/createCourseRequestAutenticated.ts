@@ -20,10 +20,11 @@ export async function createCourseRequestAutenticated({
   courseRequestData,
   headers,
 }: CreateCourseRequestAutenticatedProps) {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const queryParams = new URLSearchParams({ institute });
 
   const courseRequestAutenticatedPromise = fetch(
-    `/api/proxy/${institute}/register/request-account/${userRole}/authenticated?${queryParams.toString()}`,
+    `${basePath}/api/proxy/${institute}/register/request-account/${userRole}/authenticated?${queryParams.toString()}`,
     {
       method: "POST",
       cache: "no-store",

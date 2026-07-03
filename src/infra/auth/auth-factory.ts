@@ -35,6 +35,12 @@ export const getAuthInstance = (
       // Actualiza la sesión con la frecuencia para mantenerse activa durante el uso.
       updateAge: SESSION_REFRESH_WINDOW_SECONDS,
     },
+    account: {
+      accountLinking: {
+        enabled: true,
+        trustedProviders: ["keycloak"],
+      },
+    },
     plugins: [
       genericOAuth({
         config: [

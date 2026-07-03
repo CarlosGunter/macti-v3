@@ -2,6 +2,8 @@ import { headers } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { getAuthInstance } from "@/infra/auth/auth-factory";
 
+type AuthInstance = ReturnType<typeof getAuthInstance>;
+
 export async function proxy(request: NextRequest) {
   const institute = getInstituteFromPath(request.nextUrl.pathname);
   if (!institute) return NextResponse.next();
@@ -10,25 +12,35 @@ export async function proxy(request: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (session) return NextResponse.next();
 
-  const loginUrl = buildRedirectURL(institute, request);
-  return NextResponse.redirect(loginUrl);
+  const result = await handleBetterAuthLogin(request, auth);
+
+  if (result?.url) {
+    return NextResponse.redirect(result.url);
+  }
+
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  return NextResponse.redirect(new URL(`${basePath}/${institute}`, request.url));
+}
+
+async function handleBetterAuthLogin(request: NextRequest, auth: AuthInstance) {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  const callbackURL = `${basePath}${request.nextUrl.pathname}${request.nextUrl.search}`;
+
+  const result = await auth.api.signInSocial({
+    body: {
+      provider: "keycloak",
+      disableRedirect: true,
+      callbackURL: callbackURL,
+    },
+    headers: await headers(),
+  });
+
+  return result;
 }
 
 function getInstituteFromPath(pathname: string) {
   const [institute] = pathname.split("/").filter(Boolean);
   return institute;
-}
-
-function buildRedirectURL(institute: string, request: NextRequest) {
-  const callbackURL = encodeURIComponent(
-    `${request.nextUrl.pathname}${request.nextUrl.search}`,
-  );
-  const redirectUrl = new URL(
-    `/api/proxy/${institute}/keycloak/login?callbackURL=${callbackURL}`,
-    request.nextUrl.origin,
-  );
-
-  return redirectUrl;
 }
 
 export const config = {

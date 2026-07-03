@@ -14,7 +14,7 @@ export function LoginCardButton({ institute }: { institute: InstitutesType }) {
         e.preventDefault();
         authClient.signIn.oauth2({
           providerId: "keycloak",
-          callbackURL: `/${institute}/perfil`,
+          callbackURL: `${process.env.NEXT_PUBLIC_APP_URL}/${institute}/perfil`,
         });
       }}
     >

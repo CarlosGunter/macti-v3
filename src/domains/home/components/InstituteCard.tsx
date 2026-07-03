@@ -2,6 +2,7 @@
 
 import Link from "next/dist/client/link";
 import type { StaticImageData } from "next/image";
+import { usePathname } from "next/navigation";
 import { LoginCardButton } from "./ui/LoginInCardButton";
 
 interface Institute {
@@ -12,6 +13,9 @@ interface Institute {
 }
 
 export default function InstituteCard({ id, name, details, image }: Institute) {
+  const pathname = usePathname();
+  const registroPath = `${pathname === "/" ? "" : pathname}/registro?institute=${id}`;
+
   return (
     <article className="relative grid group rounded-2xl overflow-hidden">
       <Link
@@ -25,16 +29,12 @@ export default function InstituteCard({ id, name, details, image }: Institute) {
         </h2>
         <div className="absolute inset-x-0 bottom-7 flex justify-center gap-2 md:opacity-0 md:translate-y-7 transition-[opacity,transform,translate] md:group-hover:opacity-100 md:group-hover:translate-y-0">
           <LoginCardButton institute={id} />
-          <button
-            type="button"
+          <Link
+            href={registroPath}
             className="px-4 py-2 rounded-sm bg-black/40 hover:bg-black/70 active:bg-black/90 cursor-pointer pointer-events-auto"
-            onClick={(e) => {
-              e.preventDefault();
-              window.open(`/registro?institute=${id}`, "_self");
-            }}
           >
             Registro
-          </button>
+          </Link>
         </div>
       </div>
     </article>

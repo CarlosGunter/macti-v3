@@ -2,12 +2,13 @@ import { processFetch } from "@/shared/utils/process-fetch";
 import { enrolledCoursesSchema } from "../schemas/enrolledCoursesSchema";
 
 export async function fetchEnrolledCourses({ institute }: { institute: string }) {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   const queryParams = new URLSearchParams({
     institute,
   });
 
   const enrolledCoursesPromise = fetch(
-    `/api/proxy/${institute}/courses/enrolled?${queryParams.toString()}`,
+    `${basePath}/api/proxy/${institute}/courses/enrolled?${queryParams.toString()}`,
     {
       method: "GET",
       cache: "no-store",

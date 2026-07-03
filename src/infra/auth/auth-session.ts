@@ -9,10 +9,13 @@ interface SignOutFederatedSessionParams {
 
 export async function signOutFederatedSession({
   institute,
-  redirectPath = `/${institute}`,
+  redirectPath,
 }: SignOutFederatedSessionParams) {
   const authClient = getAuthClient(institute);
   await authClient.signOut();
+
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  redirectPath = redirectPath ?? `${basePath}/${institute}`;
 
   const kcIssuer = keycloakConfigs[institute]?.issuer;
   if (!kcIssuer) window.location.assign(redirectPath);

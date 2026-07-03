@@ -16,8 +16,8 @@ export async function generateMetadata({ params }: InstitutePageProps) {
   const currentInstitute = institutes[institute];
 
   return {
-    title: `${currentInstitute.name} | MACTI`,
-    description: `Bienvenido al portal del instituto ${currentInstitute.name}.`,
+    title: `${currentInstitute?.name ?? "Instituto"} | MACTI`,
+    description: `Bienvenido al portal del instituto ${currentInstitute?.name ?? "Instituto"}.`,
   };
 }
 
@@ -40,8 +40,10 @@ export default async function InstitutePage({ params }: InstitutePageProps) {
   return (
     <>
       <div className="grid justify-center text-center p-6">
-        <h1 className="text-2xl font-bold">Instituto: {currentInstitute.name}</h1>
-        <p>Bienvenido al portal del instituto {currentInstitute.name}.</p>
+        <h1 className="text-2xl font-bold">
+          Instituto: {currentInstitute.name ?? "Instituto"}
+        </h1>
+        <p>Bienvenido al portal del instituto {currentInstitute.name ?? "Instituto"}.</p>
 
         <div className="flex justify-center gap-4 py-4">
           <Anchor href={currentInstitute.moodle} external>

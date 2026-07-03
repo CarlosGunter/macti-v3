@@ -9,7 +9,7 @@ export async function fetchCoursesClient({ institute }: ListCoursesPayload) {
   const queryParams = new URLSearchParams({ institute });
 
   const listCoursesPromise = fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/courses?${queryParams.toString()}`,
+    `${process.env.NEXT_PUBLIC_API_URL}/courses/?${queryParams.toString()}`,
     {
       method: "GET",
       headers: { "Content-Type": "application/json" },
