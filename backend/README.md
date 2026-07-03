@@ -52,13 +52,13 @@ Puedes encontrar más detalles en la [documentación oficial de uv](https://docs
 
 ### 3. Ejecutar el proyecto
 ```bash
-uv run uvicorn app.main:app --reload
+uv run fastapi dev
 ```
 
 Éste comando hará lo siguiente:
 - Instalar las dependencias listadas en `pyproject.toml` si no están instaladas.
 - Crear un entorno virtual aislado para el proyecto si no existe.
-- Iniciar el servidor de desarrollo de FastAPI con recarga automática.
+- Iniciar el servidor de desarrollo utilizando la CLI de FastAPI con recarga automática.
 - Iniciará la BD SQLite si no existe.
 - Ejecutar las migraciones de la base de datos si es necesario.
 
@@ -76,10 +76,10 @@ Por defecto, FastAPI corre en el puerto 8000. Por lo tanto, los endpoints estar�
 - **Documentación Swagger**: http://localhost:8000/docs
 - **Documentación ReDoc**: http://localhost:8000/redoc
 
-Si deseas cambiar el puerto o la dirección, puedes modificar los parámetros en el comando `uvicorn` de la siguiente manera:
+Si deseas cambiar el puerto o la dirección, puedes modificar los parámetros en el comando de la siguiente manera:
 
 ```bash
-uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uv run fastapi dev --host 0.0.0.0 --port 8000
 ```
 
 ---
