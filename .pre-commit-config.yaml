@@ -1,14 +1,26 @@
 repos:
-  # --- Ruff (lint + format) ---
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.2
+  - repo: local
     hooks:
       - id: ruff
-        args: [--fix]
+        name: Ruff (lint)
+        entry: uv --directory backend run ruff check --fix --config pyproject.toml .
+        language: system
+        pass_filenames: false
+        files: ^backend/
+
       - id: ruff-format
+        name: Ruff (format)
+        entry: uv --directory backend run ruff format --config pyproject.toml .
+        language: system
+        pass_filenames: false
+        files: ^backend/
 
   # --- Pyright (type checking) ---
-  - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.407
+  - repo: local
     hooks:
       - id: pyright
+        name: Pyright (type checking)
+        entry: uvx --directory backend pyright --venvpath .
+        language: system
+        pass_filenames: false
+        files: ^backend/

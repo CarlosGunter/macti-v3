@@ -58,7 +58,7 @@ Antes de enviar tus aportaciones, debes asegurarte de cumplir con las reglas de 
 - **Pre-commit**: Contamos con ganchos de git configurados en el archivo raíz `.pre-commit-config.yaml`.
 - **Instalación y ejecución de pre-commit**:
   ```bash
-  # Instalar los hooks de pre-commit (desde la raíz o backend usando uv)
+  # Instalar los hooks de pre-commit (desde el backend usando uv)
   uv run pre-commit install
   
   # Ejecutar los hooks manualmente sobre todos los archivos
@@ -111,5 +111,3 @@ git push origin feature/nombre-funcionalidad
    ```
 
 ---
-
-*¡Gracias por contribuir a hacer de MACTI una mejor plataforma educativa!*
