@@ -42,6 +42,5 @@ lint.ignore = ["E501", "B008"]  # Ignora línea larga, el formateador se encarga
 "app/core/db/alembic/versions/*.py" = ["F401"]  # Ignora importaciones no utilizadas
 
 [tool.pyright]
-exclude = [".venv"]
 venvPath = "."
 venv = ".venv"

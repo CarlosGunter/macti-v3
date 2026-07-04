@@ -1,14 +1,14 @@
 import logging
 from typing import Any
 
+# from app.modules.nbgrader.controllers.sync_students_controller import (
+#     sync_students_controller,
+# )
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
+from app.core.db.database import get_db
 from app.modules.nbgrader.controllers.sync_grade_controller import sync_grade_controller
-from app.modules.nbgrader.controllers.sync_students_controller import (
-    sync_students_controller,
-)
 from app.modules.nbgrader.schemas import GradeSyncResponse, GradeSyncSchema
 
 # Importamos tu servicio y el modelo/dependencia de la base de datos
@@ -101,6 +101,6 @@ async def force_sync_user_to_jupyter(email: str, role: str = "docente"):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@sync_router.get("/nbgrader/sync-students")
-async def sync_students_hub(teacher_email: str, db: Session = Depends(get_db)):
-    return await sync_students_controller(teacher_email, db)
+# @sync_router.get("/nbgrader/sync-students")
+# async def sync_students_hub(teacher_email: str, db: Session = Depends(get_db)):
+# return await sync_students_controller(teacher_email, db)

@@ -24,7 +24,7 @@ from app.shared.services.redis_client import redis_client
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """Maneja el ciclo de vida de la app."""
     # Arranque
     setup_logging()

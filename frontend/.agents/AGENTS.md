@@ -1,21 +1,15 @@
-# Reglas del Proyecto
+# Reglas del Proyecto Frontend
 
-Este archivo contiene las pautas y restricciones específicas para los agentes que trabajen en este proyecto frontend.
+> [!IMPORTANT]
+> Las reglas y directrices detalladas del Frontend se han migrado a múltiples **Skills** especializados dentro de `.agents/skills/` para optimizar el consumo de tokens y el contexto de la conversación.
 
-## Gestión de Paquetes y Dependencias
+Consulta el Skill correspondiente a la tarea que estés realizando:
 
-- **Gestor de Paquetes Obligatorio**: Debes utilizar siempre `pnpm` para instalar dependencias, ejecutar scripts (`pnpm run <script>`), o cualquier otra tarea relacionada con Node.js en este proyecto. NO utilices `npm` ni `yarn`.
-- **Instalación de dependencias**: Al agregar nuevos paquetes, hazlo siempre mediante `pnpm add <paquete>` o `pnpm add -D <paquete>` para dependencias de desarrollo.
+1. **Gestión de Dependencias y Paquetes**: [skills/macti-frontend-deps/SKILL.md](skills/macti-frontend-deps/SKILL.md)
+   *Para utilizar obligatoriamente `pnpm` para la instalación de dependencias y ejecución de scripts locales.*
 
-## Desarrollo Frontend
+2. **Arquitectura y Código**: [skills/macti-frontend-arch/SKILL.md](skills/macti-frontend-arch/SKILL.md)
+   *Para directrices sobre TypeScript, React, Next.js, calidad y estructuración de componentes, comentarios JSDoc obligatorios y actualización del README.md.*
 
-- Sigue las convenciones establecidas en el proyecto (TypeScript, React/Vite, etc.) según la estructura existente en `frontend/`.
-- Mantén el diseño limpio, responsivo y fiel a los estilos visuales definidos en el código.
-
-## Indicaciones del código
-- **No comentes código innecesariamente**: Evita dejar comentarios sobre los cambios realizados, a menos que sean realmente necesarios para la comprensión del código.
-- **Documentación**: Asegúrate de documentar y mantener actualizadas las funciones y componentes importantes, especialmente aquellos que forman parte de la API pública del proyecto. Utiliza comentarios JSDoc para funciones y componentes.
-
-## Git y Control de Versiones
-- **Utiliza conventional commits**: Sigue las convenciones de mensajes de commit para mantener un historial claro y comprensible.
-- **PRs con Descripción Clara**: Al crear Pull Requests, proporciona una descripción detallada de los cambios realizados, incluyendo el propósito y cualquier contexto relevante.
+3. **Git y Control de Versiones**: [skills/macti-frontend-git/SKILL.md](skills/macti-frontend-git/SKILL.md)
+   *Para nomenclatura de ramas, formato de Conventional Commits en español (tiempo pasado) y requisitos de Pull Requests.*
