@@ -58,7 +58,7 @@ En otra terminal o pestaña:
 ```bash
 cd backend
 # Configura las variables de entorno en un archivo .env guiándote de .env.example
-uv run uvicorn app.main:app --reload
+uv run fastapi dev
 ```
 La API y su documentación interactiva (Swagger UI) estarán en [http://localhost:8000/docs](http://localhost:8000/docs).
 
