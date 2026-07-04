@@ -3,14 +3,8 @@ name: API CI/CD
 on:
   push:
     branches: [ dev ]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/backend-ci-cd.yml'
   pull_request:
     branches: [ dev ]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/backend-ci-cd.yml'
   workflow_run:
     workflows: ["Branch Gatekeeper"]
     types:
@@ -28,6 +22,7 @@ concurrency:
 
 jobs:
   initialize:
+    name: Inicializar Pipeline de API
     runs-on: ubuntu-latest
     outputs:
       should_run: ${{ steps.check.outputs.should_run }}
@@ -40,25 +35,45 @@ jobs:
       - name: Determinar si debe ejecutarse
         id: check
         run: |
-          SHOULD_RUN="true"
+          SHOULD_RUN="false"
           if [ "${{ github.event_name }}" = "workflow_run" ]; then
             if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
               echo "Gatekeeper no fue exitoso. Saltando ejecución."
               SHOULD_RUN="false"
             else
               echo "Analizando cambios en el commit ${{ github.event.workflow_run.head_sha }}..."
-              FILES_CHANGED=$(git diff-tree --no-commit-id --name-only -r ${{ github.event.workflow_run.head_sha }} || true)
+              FILES_CHANGED=$(git diff-tree --no-commit-id --name-only -r -m ${{ github.event.workflow_run.head_sha }} || true)
               echo "Archivos modificados:"
               echo "$FILES_CHANGED"
-              if ! echo "$FILES_CHANGED" | grep -qE '^(backend/|\.github/workflows/backend-ci-cd.yml)'; then
-                echo "No hay cambios en backend. Saltando."
-                SHOULD_RUN="false"
+              if echo "$FILES_CHANGED" | grep -qE '^(backend/|\.github/workflows/backend-ci-cd.yml)'; then
+                SHOULD_RUN="true"
               fi
             fi
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "Analizando cambios para Pull Request..."
+            git fetch origin ${{ github.base_ref }} --depth=1
+            FILES_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD || true)
+            echo "Archivos modificados:"
+            echo "$FILES_CHANGED"
+            if echo "$FILES_CHANGED" | grep -qE '^(backend/|\.github/workflows/backend-ci-cd.yml)'; then
+              SHOULD_RUN="true"
+            fi
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            echo "Analizando cambios para Push..."
+            FILES_CHANGED=$(git diff --name-only HEAD~1 HEAD || true)
+            echo "Archivos modificados:"
+            echo "$FILES_CHANGED"
+            if echo "$FILES_CHANGED" | grep -qE '^(backend/|\.github/workflows/backend-ci-cd.yml)'; then
+              SHOULD_RUN="true"
+            fi
+          else
+            echo "Otro tipo de evento (workflow_dispatch/etc). Ejecutando por defecto."
+            SHOULD_RUN="true"
           fi
           echo "should_run=$SHOULD_RUN" >> $GITHUB_OUTPUT
 
   quality:
+    name: Control de Calidad de API
     needs: initialize
     if: needs.initialize.outputs.should_run == 'true'
     runs-on: ubuntu-latest
@@ -94,6 +109,7 @@ jobs:
       #   working-directory: backend
 
   build-and-push:
+    name: Construcción y Publicación de API
     needs: quality
     runs-on: ubuntu-latest
     permissions:
