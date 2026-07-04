@@ -4,10 +4,10 @@ Service for interacting with Moodle LMS API - Project MACTI
 
 from types import SimpleNamespace
 
+from app.core.cache.redis_client import redis_client
 from app.shared.config.moodle_configs import MOODLE_CONFIG
 from app.shared.enums.institutes_enum import InstitutesEnum
 from app.shared.services.moodle_client import make_moodle_request
-from app.shared.services.redis_client import redis_client
 
 
 class MoodleService:
