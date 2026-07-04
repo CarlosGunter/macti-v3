@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.cache.redis_client import redis_client
 from app.core.db.database import Base, engine
 from app.core.environment import environment
 from app.core.logging.config import setup_logging
@@ -20,7 +21,6 @@ from app.modules.nbgrader.routes import sync_router
 from app.modules.register.routes import router as register_router
 from app.modules.temp.routes import router as temp_router
 from app.shared import models as _models  # noqa: F401
-from app.shared.services.redis_client import redis_client
 
 
 @asynccontextmanager
