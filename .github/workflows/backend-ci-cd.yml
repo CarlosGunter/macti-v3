@@ -3,12 +3,19 @@ name: Macti API CI/CD
 on:
   push:
     branches: [ main, dev ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci-cd.yml'
   pull_request:
-    branches: [ main ]
+    branches: [ dev ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci-cd.yml'
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository }}-backend
   PYTHON_VERSION: "3.12"
 
 concurrency:
@@ -25,25 +32,29 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Configurar uv
-        uses: astral-sh/setup-uv@v7
+      # - name: Configurar uv
+      #   uses: astral-sh/setup-uv@v7
 
-      - name: Configurar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+      # - name: Configurar Python
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: ${{ env.PYTHON_VERSION }}
 
       # - name: Instalar dependencias de desarrollo
       #   run: uv sync --locked --group dev
+      #   working-directory: backend
 
-      # - name: Validar Ruff
+      # - name: Validar Ruff (Linter)
       #   run: uv run ruff check .
+      #   working-directory: backend
 
       # - name: Validar formato con Ruff
       #   run: uv run ruff format --check .
+      #   working-directory: backend
 
       # - name: Validar tipos con Pyright
-      #   run: uvx pyright
+      #   run: uvx pyright --venvpath .
+      #   working-directory: backend
 
   build-and-push:
     needs: quality
@@ -80,7 +91,8 @@ jobs:
       - name: Construir la imagen Docker
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./backend
+          file: ./backend/Dockerfile
           push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

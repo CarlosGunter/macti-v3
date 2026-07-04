@@ -1,0 +1,96 @@
+name: Next.js CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci-cd.yml'
+  pull_request:
+    branches: [ dev ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci-cd.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}-frontend
+  NODE_VERSION: "24"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Instalar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+        working-directory: frontend
+
+      - name: Validar Biome (Linter y Formateador)
+        run: pnpm exec biome ci ./src
+        working-directory: frontend
+
+  build-and-push:
+    needs: quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login en GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extraer metadatos de Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,format=short
+
+      - name: Construir y Subir Imagen Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max,ignore-error=true
