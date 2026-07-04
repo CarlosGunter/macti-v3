@@ -1,4 +1,4 @@
-name: Next.js CI/CD Pipeline
+name: Frontend CI/CD Pipeline
 
 on:
   push:
