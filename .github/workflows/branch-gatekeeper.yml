@@ -1,0 +1,48 @@
+name: Branch Gatekeeper
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  validate:
+    name: Validar Reglas de Ramas
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Validar origen del Pull Request hacia main
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "Verificando rama de origen del Pull Request hacia main..."
+          HEAD_REF="${{ github.head_ref }}"
+          echo "Rama origen: $HEAD_REF"
+          if [ "$HEAD_REF" != "dev" ]; then
+            echo "::error::Solo se permiten Pull Requests a 'main' desde la rama 'dev'. Rama origen actual: '$HEAD_REF'"
+            exit 1
+          fi
+          echo "Validación de PR exitosa."
+
+      - name: Validar origen del Push/Merge en main
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Verificando procedencia del commit en main..."
+          PR_SOURCE=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }}/pulls --jq '.[0].head.ref')
+          echo "Rama origen detectada: '$PR_SOURCE'"
+          if [ "$PR_SOURCE" != "dev" ]; then
+            echo "::error::Se detectó un push directo o un merge en 'main' que no proviene de la rama 'dev'."
+            echo "Todos los cambios integrados en 'main' deben pasar primero por la rama 'dev'."
+            exit 1
+          fi
+          echo "Validación de Push/Merge exitosa."

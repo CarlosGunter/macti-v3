@@ -2,7 +2,7 @@ name: Macti API CI/CD
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ dev ]
     paths:
       - 'backend/**'
       - '.github/workflows/backend-ci-cd.yml'
@@ -11,6 +11,10 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/backend-ci-cd.yml'
+  workflow_run:
+    workflows: ["Branch Gatekeeper"]
+    types:
+      - completed
   workflow_dispatch:
 
 env:
@@ -23,7 +27,40 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  initialize:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Determinar si debe ejecutarse
+        id: check
+        run: |
+          SHOULD_RUN="true"
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+              echo "Gatekeeper no fue exitoso. Saltando ejecución."
+              SHOULD_RUN="false"
+            else
+              echo "Analizando cambios en el commit ${{ github.event.workflow_run.head_sha }}..."
+              FILES_CHANGED=$(git diff-tree --no-commit-id --name-only -r ${{ github.event.workflow_run.head_sha }} || true)
+              echo "Archivos modificados:"
+              echo "$FILES_CHANGED"
+              if ! echo "$FILES_CHANGED" | grep -qE '^(backend/|\.github/workflows/backend-ci-cd.yml)'; then
+                echo "No hay cambios en backend. Saltando."
+                SHOULD_RUN="false"
+              fi
+            fi
+          fi
+          echo "should_run=$SHOULD_RUN" >> $GITHUB_OUTPUT
+
   quality:
+    needs: initialize
+    if: needs.initialize.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
