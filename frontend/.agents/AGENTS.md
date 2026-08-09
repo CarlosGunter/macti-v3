@@ -18,6 +18,9 @@ Este archivo contiene las pautas y restricciones específicas para los agentes q
 - **JSDoc/Comentarios**: El agente **debe generar y mantener actualizados los JSDoc y comentarios** de todo el código de componentes o utilitarios que escriba o modifique.
 - **Actualización de README**: Si las modificaciones realizadas en el frontend afectan la estructura de directorios, agregan dependencias importantes o alteran scripts y flujos de arranque, se debe **actualizar el archivo README.md del frontend** de forma obligatoria para reflejar dichos cambios.
 
+## Documentación y Referencias
+- **Referencia a assets o recursos**: Si se requiere hacer referencia a assets o recursos externos, se debe **utilizar rutas relativas** dentro del proyecto y evitar enlaces absolutos o externos que puedan romperse.
+
 ---
 
 ## 🔍 Carga Dinámica de Contexto por Capas (Skills)
