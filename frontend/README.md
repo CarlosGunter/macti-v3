@@ -2,7 +2,7 @@
 
 > 🎓 **M**ateriales didácticos para **A**nálisis **C**omputacional **T**écnico y **I**nvestigación
 
-Una plataforma educativa moderna construida con Next.js que alberga materiales didácticos, haciendo énfasis en ejemplos prácticos y aplicaciones de conceptos abstractos para cursos semestrales de Análisis Numérico y Ecuaciones Diferenciales.
+Una plataforma web moderna y dashboard centralizado construido con Next.js que consolida la administración de usuarios, la gestión de cursos y el flujo de aprendizaje de MACTI, ofreciendo soporte multitenant y acceso a materiales didácticos, simulaciones y cuadernos interactivos para cursos de Análisis Numérico y Ecuaciones Diferenciales.
 
 ---
 
