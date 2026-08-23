@@ -75,7 +75,7 @@ async def get_all_users_jupyter_status(
                 "error_code": "SUMMARY_GENERATION_FAILED",
                 "message": f"Error interno al generar el reporte cruzado: {str(err)}",
             },
-        )
+        ) from err
 
 
 @router.post("/force-sync-user", tags=["JupyterHub / nbgrader"])
@@ -98,7 +98,7 @@ async def force_sync_user_to_jupyter(email: str, role: str = "docente"):
                 "message": "JupyterHub rechazó la petición. Revisa el Token.",
             }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # @sync_router.get("/nbgrader/sync-students")
