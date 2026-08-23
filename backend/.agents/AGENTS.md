@@ -52,6 +52,11 @@ uv run fastapi dev
 
 ---
 
+## Documentación y Referencias
+- **Referencia a assets o recursos**: Si se requiere hacer referencia a assets o recursos externos, se debe **utilizar rutas relativas** dentro del proyecto y evitar enlaces absolutos o externos que puedan romperse.
+
+---
+
 ## 🔍 Carga Dinámica de Contexto por Capas (Skills)
 
 Para optimizar el uso de tokens y mantener el contexto de la conversación limpio, los detalles de la base de datos, arquitectura y control de versiones se manejan a través de Skills específicos:
