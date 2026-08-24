@@ -106,7 +106,7 @@ graph TD
 ### 4.1 Componentes de Kubernetes para el Frontend
 
 #### A. Deployment (`macti-frontend-deployment.yaml`)
-- **Etiqueta de Imagen**: Usar el tag `sha-<short>` generado por GitHub Actions (`ghcr.io/carlosgunter/macti-v3-frontend:sha-a1b2c3d`).
+- **Etiqueta de Imagen**: Usar el tag `sha-<short>` generado por GitHub Actions (`ghcr.io/<username>/macti-v3-frontend:<TAG>`).
 - **Seguridad (`securityContext`)**:
   - `runAsUser: 1000` (usuario `node` sin privilegios de root configurado en el Dockerfile).
 - **Probes de Salud**:
@@ -152,7 +152,7 @@ stringData:
 ```bash
 # Aplicar la nueva versión generada por el CI/CD en el clúster
 kubectl set image deployment/macti-frontend-deployment \
-  macti-frontend=ghcr.io/carlosgunter/macti-v3-frontend:sha-a1b2c3d \
+  macti-frontend=ghcr.io/<username>/macti-v3-frontend:<TAG> \
   -n macti-prod
 
 # Validar el estado del despliegue progresivo

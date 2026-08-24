@@ -103,7 +103,7 @@ graph TD
 ### 3.1 Componentes de Kubernetes para el Backend
 
 #### A. Deployment (`macti-backend-deployment.yaml`)
-- **Imágenes Inmutables**: Se recomienda desplegar utilizando la etiqueta `sha-<short>` generada en el pipeline (ej. `ghcr.io/carlosgunter/macti-v3-backend:sha-a1b2c3d`) para garantizar **rollbacks instantáneos y reproducibilidad**.
+- **Imágenes Inmutables**: Se recomienda desplegar utilizando la etiqueta `sha-<short>` generada en el pipeline (ej. `ghcr.io/<username>/macti-v3-backend:<TAG>`) para garantizar **rollbacks instantáneos y reproducibilidad**.
 - **Contexto de Seguridad (`securityContext`)**:
   - `runAsUser: 999` y `runAsGroup: 999` (coincidiendo con el usuario `nonroot` configurado en el Dockerfile).
 - **Probes de Salud**:
@@ -158,7 +158,7 @@ Para aplicar una actualización de producción de forma manual:
 ```bash
 # 1. Actualizar la imagen en el Deployment existente
 kubectl set image deployment/macti-backend-deployment \
-  macti-backend=ghcr.io/carlosgunter/macti-v3-backend:sha-a1b2c3d \
+  macti-backend=ghcr.io/<username>/macti-v3-backend:<TAG> \
   -n macti-prod
 
 # 2. Monitorear el progreso de la actualización progresiva (Rolling Update)
