@@ -2,12 +2,21 @@
 Service for interacting with Moodle LMS API - Project MACTI
 """
 
+from dataclasses import dataclass, field
 from types import SimpleNamespace
 
 from app.core.cache.redis_client import redis_client
 from app.shared.config.moodle_configs import MOODLE_CONFIG
 from app.shared.enums.institutes_enum import InstitutesEnum
+from app.shared.enums.role_moodle_enum import RoleEnum
 from app.shared.services.moodle_client import make_moodle_request
+
+
+@dataclass
+class GetAdminsResult:
+    success: bool
+    error_message: str | None = None
+    admins: list = field(default_factory=list)
 
 
 class MoodleService:
@@ -289,6 +298,38 @@ class MoodleService:
             ),
         }
 
+    @staticmethod
+    async def get_admins(institute: InstitutesEnum) -> GetAdminsResult:
+        """
+        Función auxiliar para obtener la lista de emails de administradores de un instituto.
+        """
+        config = MOODLE_CONFIG[institute]
+        endpoint = config.moodle_url
+
+        params = {
+            "wstoken": config.moodle_token,
+            "wsfunction": "local_sitemanagers_get_site_managers",
+            "moodlewsrestformat": "json",
+        }
+
+        result_response = await make_moodle_request(
+            url=endpoint,
+            params=params,
+            institute=institute,
+        )
+        if not result_response["success"]:
+            return GetAdminsResult(
+                success=False,
+                error_message=result_response["error_message"],
+                admins=[],
+            )
+
+        return GetAdminsResult(
+            success=True,
+            error_message=None,
+            admins=result_response.get("data", []),
+        )
+
     # Función para poder obtener los cursos en los que un usuario está inscrito, utilizando su ID
     # de Moodle. Esta función es útil para el endpoint que consulta los cursos inscritos por
     # usuario, y la llamamos desde el MoodleService del módulo de cursos para reutilizar la lógica
@@ -343,3 +384,27 @@ class MoodleService:
             courses=courses,
             error=None,
         )
+
+    @staticmethod
+    async def get_user_roles(
+        institute: InstitutesEnum,
+        course_id: int,
+        moodle_id: int,
+    ) -> list[RoleEnum]:
+        """
+        Función auxiliar para recuperar roles asignados en un curso de Moodle.
+        """
+
+        get_user_profile_result = await MoodleService.get_user_profile(
+            institute=institute, user_id=moodle_id, course_id=course_id
+        )
+
+        if get_user_profile_result.error:
+            return []
+
+        user_roles = get_user_profile_result.user_profile.get("roles", [])
+
+        # Conversión de IDs numéricos de Moodle al Enum RoleEnum para tipado fuerte
+        list_roles = [RoleEnum(role["roleid"]) for role in user_roles]
+
+        return list_roles
