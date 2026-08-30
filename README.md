@@ -26,11 +26,34 @@ Una API de alto rendimiento que proporciona la lógica de negocio y los servicio
 
 ## ⚡ Requisitos del Sistema
 
-Para el correcto funcionamiento local del monorrepo, asegúrate de tener instalado:
+Para el correcto funcionamiento local del monorrepo, asegúrate de contar con los siguientes entornos y gestores de paquetes:
 
-- **Node.js** (versión >= 18.17.0) junto con **pnpm** (para gestionar el Frontend).
-- **Python** (versión >= 3.8) junto con **uv** (para gestionar el Backend de forma rápida).
 - **Git** para el control de versiones.
+- **Node.js** (versión >= 18.17.0) y **pnpm** (para gestionar el Frontend).
+- **Python** (versión >= 3.8) y **uv** (para gestionar el Backend).
+
+### 📦 Instalación de Gestores de Paquetes
+
+#### 1. **uv** (Backend)
+Puedes instalar `uv` mediante la línea de comandos o visitar la [guía de instalación de uv](https://docs.astral.sh/uv/getting-started/installation/):
+
+- **Linux / macOS**:
+  ```bash
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  ```
+- **Windows (PowerShell)**:
+  ```powershell
+  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+  ```
+
+#### 2. **pnpm** (Frontend)
+Una vez instalado Node.js, puedes instalar `pnpm` ejecutando:
+
+```bash
+npx get-pnpm
+```
+
+Para métodos alternativos u opciones adicionales, consulta la [guía de instalación de pnpm](https://pnpm.io/installation).
 
 ---
 
@@ -40,8 +63,8 @@ Para poner en marcha el proyecto de forma local:
 
 ### Paso 1: Clonar el proyecto
 ```bash
-git clone https://github.com/CarlosGunter/macti-monorepo.git
-cd macti-monorepo
+git clone https://github.com/CarlosGunter/macti-v3.git
+cd macti-v3
 ```
 
 ### Paso 2: Iniciar el Frontend
@@ -51,7 +74,7 @@ cd frontend
 pnpm install
 pnpm dev
 ```
-La interfaz estará lista en [http://localhost:3000](http://localhost:3000).
+La interfaz estará lista en [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
 ### Paso 3: Iniciar el Backend
 En otra terminal o pestaña:
@@ -60,7 +83,7 @@ cd backend
 # Configura las variables de entorno en un archivo .env guiándote de .env.example
 uv run fastapi dev
 ```
-La API y su documentación interactiva (Swagger UI) estarán en [http://localhost:8000/docs](http://localhost:8000/docs).
+La API y su documentación interactiva (Swagger UI) estarán en [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
 
 ---
 

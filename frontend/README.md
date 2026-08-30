@@ -15,7 +15,7 @@ Una plataforma educativa moderna construida con Next.js que alberga materiales d
 - **Peticiones y Servidor**: TanStack React Query
 - **Autenticación**: Better Auth
 - **Linter & Formateador**: Biome (más rápido y estricto que ESLint/Prettier)
-- **Gestor de Paquetes**: pnpm
+- **Gestor de Paquetes**: [pnpm](https://pnpm.io/installation)
 
 ---
 
@@ -48,27 +48,21 @@ src/
 ### Prerrequisitos
 
 - **Node.js** >= 18.17.0
-- **pnpm** (Gestor de paquetes obligatorio)
+- [**pnpm**](https://pnpm.io/installation) (Gestor de paquetes obligatorio)
 
-### 1. Clonar el Repositorio
-```bash
-git clone https://github.com/CarlosGunter/macti-monorepo
-cd macti-monorepo/frontend
-```
-
-### 2. Instalar Dependencias
+### 1. Instalar Dependencias
 Se debe utilizar exclusivamente `pnpm` para la gestión de dependencias del frontend:
 ```bash
 pnpm install
 ```
 
-### 3. Ejecutar el Proyecto
+### 2. Ejecutar el Proyecto
 Para iniciar el servidor de desarrollo local:
 ```bash
 pnpm dev
 ```
 
-El servidor estará corriendo en [http://localhost:3000](http://localhost:3000).
+El servidor estará corriendo en [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
 ---
 
