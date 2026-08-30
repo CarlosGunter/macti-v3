@@ -4,7 +4,7 @@
 # seguridad (CORS), gestiona la creación automática del esquema de base de datos
 # y orquesta la inclusión de los diferentes módulos de negocio (Register, Courses, Temp).
 # app/main.py
-# app/main.py
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -25,25 +25,34 @@ from app.shared import models as _models  # noqa: F401
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    """Maneja el ciclo de vida de la app."""
-    # Arranque
+    """
+    Context manager para manejar el ciclo de vida de la aplicación.
+    Se ejecuta al iniciar y cerrar la aplicación, permitiendo inicializar recursos
+    como la base de datos o servicios externos.
+    """
+    # Inicialización de la persistencia: Crea las tablas si no existen al arrancar
+    Base.metadata.create_all(bind=engine)
+    print("Base de datos inicializada y tablas creadas (si no existían).")
+
+    # Arranque de servicios
     setup_logging()
     await redis_client.connect()
+
     yield
-    # Apagado
+
+    # Tareas de limpieza / Apagado
     await redis_client.disconnect()
 
-
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="MACTI API",
     description="Backend para la gestión de identidades y recursos académicos UNAM",
     version="1.0.0",
     lifespan=lifespan,
+    root_path="/macti-api",
 )
 
-# CORS
+# Configuración de CORS
 frontend_origin = (
     environment.FRONTEND_URL if environment.APP_ENV != "development" else "*"
 )
@@ -58,9 +67,11 @@ app.add_middleware(
 
 @app.get("/", tags=["Root"])
 async def read_root():
+    """Endpoint de verificación de salud (Health Check)."""
     return {"Inicio": "MACTI API - Sistema en línea"}
 
 
+# Registro de rutas modulares
 app.include_router(register_router)
 app.include_router(courses_router)
 app.include_router(nbgrader_router)

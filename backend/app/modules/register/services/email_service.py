@@ -22,17 +22,9 @@ class EmailService:
     """
     Servicio encargado de la comunicación vía Email del sistema MACTI.
 
-    Extrae la configuración del servidor (Host, Puerto, Credenciales) directamente
-    del objeto global de configuración para asegurar la portabilidad entre entornos.
+    Extrae la configuración del servidor (Host, Puerto, Credenciales) dinámicamente
+    del objeto de configuración para asegurar la portabilidad y evitar caché de clase.
     """
-
-    SMTP_HOST = environment.SMTP_HOST
-    SMTP_PORT = environment.SMTP_PORT
-    SMTP_USER = environment.SMTP_USER
-    SMTP_PASS = environment.SMTP_PASS
-    FROM_ADDRESS = environment.FROM_ADDRESS
-    FRONTEND_URL = environment.FRONTEND_URL
-    FROM_NAME = "MACTI Proto"
 
     @staticmethod
     def send_validation_email(
@@ -48,14 +40,12 @@ class EmailService:
             Un dataclass con el estatus del envío.
         """
 
-        # Enlace dinámico que apunta al front-end de Next.js.
-        confirm_link = (
-            f"{EmailService.FRONTEND_URL}/registro/confirmacion?token={token}"
-        )
+        frontend_url = environment.FRONTEND_URL
+        confirm_link = f"{frontend_url}/registro/confirmacion?token={token}"
 
         msg = EmailMessage()
         msg["Subject"] = subject or "¡Cuenta MACTI Aprobada! Confirma tu correo"
-        msg["From"] = f"{EmailService.FROM_NAME} <{EmailService.FROM_ADDRESS}>"
+        msg["From"] = environment.FROM_ADDRESS
         msg["To"] = to_email
 
         # Construcción del cuerpo del mensaje (Uso de string multilínea para el correo)
@@ -73,11 +63,18 @@ class EmailService:
         )
 
         try:
-            # Inicia la conexión SMTP con cifrado TLS (Transport Layer Security).
-            # El uso del bloque 'with' asegura que la conexión se cierre correctamente.
-            with smtplib.SMTP(EmailService.SMTP_HOST, EmailService.SMTP_PORT) as smtp:
-                smtp.starttls()  # Asegura la conexión usando TLS
-                smtp.login(EmailService.SMTP_USER, EmailService.SMTP_PASS)
+            smtp_host = environment.SMTP_HOST
+            smtp_port = int(environment.SMTP_PORT)
+            smtp_user = environment.SMTP_USER.strip()
+            # Elimina cualquier espacio accidental de la contraseña de aplicación de Gmail
+            smtp_pass = environment.SMTP_PASS.replace(" ", "").strip()
+
+            # Inicia la conexión SMTP con cifrado TLS.
+            with smtplib.SMTP(smtp_host, smtp_port) as smtp:
+                smtp.ehlo()
+                smtp.starttls()
+                smtp.ehlo()
+                smtp.login(smtp_user, smtp_pass)
                 smtp.send_message(msg)
 
             return SendValidationEmailResult(

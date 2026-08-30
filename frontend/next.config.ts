@@ -7,3 +7,6 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+/**
+ * con / me marca error
+ */

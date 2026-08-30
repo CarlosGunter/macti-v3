@@ -73,7 +73,7 @@ class RedisClient:
     def build_key(prefix: str, **kwargs) -> str:
         """Construye una clave de caché a partir de parámetros."""
         raw = json.dumps(kwargs, sort_keys=True, default=str)
-        hashed = hashlib.md5(raw.encode()).hexdigest()
+        hashed = hashlib.sha256(raw.encode()).hexdigest()
         return f"moodle:{prefix}:{hashed}"
 
 
