@@ -313,7 +313,7 @@ class RequestStatusController:
             HTTPException si hay errores en la inscripción
         """
         enroll_user_use_case = EnrollUserUseCase(
-            moodle_service=MoodleService(), institute=institute
+            moodle_service=MoodleService(), institute=institute, db=repository.db
         )
         enroll_result = await enroll_user_use_case.execute(
             request_course_data=course_request
