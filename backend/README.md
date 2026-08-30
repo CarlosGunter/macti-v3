@@ -7,7 +7,7 @@
 ## 🛠️ Tecnologías y Herramientas
 
 - **Framework**: FastAPI (estándar)
-- **Gestión de Entorno y Dependencias**: [uv](https://astral.sh/uv/) (Astral)
+- **Gestión de Entorno y Dependencias**: [uv](https://docs.astral.sh/uv/getting-started/installation/) (Astral)
 - **Base de Datos**: PostgreSQL (producción) y SQLite (desarrollo local)
   - Mapeado con SQLAlchemy 2.0.
   - Migraciones gestionadas por Alembic (únicamente para PostgreSQL / producción).
@@ -56,15 +56,9 @@ backend/
 ### Prerrequisitos
 
 - Python >= 3.12
-- [uv](https://astral.sh/uv/) (gestor de paquetes de Python)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) (gestor de paquetes de Python)
 
-### 1. Clonar el Repositorio
-```bash
-git clone https://github.com/CarlosGunter/macti-monorepo
-cd macti-monorepo/backend
-```
-
-### 2. Configuración de Variables de Entorno
+### 1. Configuración de Variables de Entorno
 Copia el archivo de ejemplo y configura tus variables:
 ```bash
 cp .env.example .env
@@ -72,11 +66,13 @@ cp .env.example .env
 > [!IMPORTANT]
 > **Cualquier nueva variable de entorno** que sea requerida por el backend debe declararse obligatoriamente tanto en `app/core/environment.py` como en `.env.example`.
 
-### 3. Ejecutar el Proyecto
+### 2. Ejecutar el Proyecto
 Para iniciar el servidor de desarrollo utilizando la CLI de FastAPI con recarga automática:
 ```bash
 uv run fastapi dev
 ```
+
+La API y su documentación interactiva (Swagger UI) estarán disponibles en [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
 
 Si deseas modificar el puerto o la dirección host:
 ```bash
