@@ -39,7 +39,7 @@ class JupyterService:
                 "last_name": last_name or "",
             }
 
-        async with httpx.AsyncClient(verify=False) as client:
+        async with httpx.AsyncClient(verify=False) as client:  # noqa: S501
             try:
                 await client.post(
                     f"{api_base_url}/users/{email}", json=user_payload, headers=headers
@@ -53,7 +53,7 @@ class JupyterService:
         if role == "docente" or "docente" in str(role).lower():
             url = f"{api_base_url}/groups/{group_name}/users"
 
-            async with httpx.AsyncClient(verify=False) as client_group:
+            async with httpx.AsyncClient(verify=False) as client_group:  # noqa: S501
                 try:
                     res = await client_group.post(
                         url, json={"users": [str(email)]}, headers=headers
@@ -71,7 +71,7 @@ class JupyterService:
                     return False
         else:
             url = f"{api_base_url}/groups/{group_name}/users"
-            async with httpx.AsyncClient(verify=False) as client_del:
+            async with httpx.AsyncClient(verify=False) as client_del:  # noqa: S501
                 await client_del.request(
                     "DELETE", url, json={"users": [str(email)]}, headers=headers
                 )
@@ -93,7 +93,7 @@ class JupyterService:
         api_base_url = "https://tlapoa.lamod.unam.mx/hubier/hub/api"
         headers = {"Authorization": f"token {token}"}
 
-        async with httpx.AsyncClient(verify=False) as client:
+        async with httpx.AsyncClient(verify=False) as client:  # noqa: S501
             try:
                 response = await client.get(
                     f"{api_base_url}/users/{username}", headers=headers
@@ -123,7 +123,7 @@ class JupyterService:
         headers = {"Authorization": f"token {token}"}
 
         summary = []
-        async with httpx.AsyncClient(verify=False) as client:
+        async with httpx.AsyncClient(verify=False) as client:  # noqa: S501
             for user in db_users:
                 try:
                     # 1. Consultamos a la API de JupyterHub
