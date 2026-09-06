@@ -83,7 +83,7 @@
   --popover: light-dark(#e3f8cf, #0b2027);
   --popover-foreground: light-dark(#0b2027, #e3f8cf);
   --primary: light-dark(#fff, #00d9da);
-  --primary-foreground: light-dark(#0b2027, #e3f8cf);
+  --primary-foreground: light-dark(#013b75, #e3f8cf);
   --secondary: light-dark(#013b75, oklch(0.269 0 0));
   --secondary-foreground: light-dark(#fff, oklch(0.985 0 0));
   --muted: light-dark(oklch(0.97 0 0), oklch(0.269 0 0));

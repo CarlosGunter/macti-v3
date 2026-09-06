@@ -12,7 +12,7 @@ export default async function Layout({ children, params }: LayoutProps) {
     <RuntimeRecoveryBoundary>
       <div className="w-full flex flex-col items-center">
         <Header institute={institute} />
-        <div className="w-11/12 max-w-6xl p-2 sm:p-0">{children}</div>
+        <div className="w-11/12 p-2 sm:p-0">{children}</div>
       </div>
     </RuntimeRecoveryBoundary>
   );

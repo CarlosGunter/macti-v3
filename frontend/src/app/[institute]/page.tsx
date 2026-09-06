@@ -39,8 +39,8 @@ export default async function InstitutePage({ params }: InstitutePageProps) {
 
   return (
     <div className="grid gap-6">
-      <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-        Explorar Cursos de {currentInstitute.name ?? "Instituto"}
+      <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-6">
+        Explorar Cursos de {currentInstitute.name ?? "Facultad"}
       </h1>
 
       <div className="w-full bg-secondary p-6 rounded-xl shadow-xl">

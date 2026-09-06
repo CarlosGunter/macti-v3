@@ -4,7 +4,7 @@ interface AnchorProps {
   children: React.ReactNode;
   href: string;
   className?: string;
-  variant?: "default" | "secondary";
+  variant?: "default" | "secondary" | "bordered";
   external?: boolean;
 }
 
@@ -14,7 +14,7 @@ const variants = {
   secondary:
     "bg-secondary text-secondary-foreground border border-gray-300 dark:border-gray-600 hover:bg-secondary/80",
   bordered:
-    "bg-primary text-primary-foreground hover:bg-accent hover:text-accent-foreground border border border-secondary",
+    "bg-primary text-primary-foreground border-2 font-bold border-secondary hover:bg-accent hover:border-accent hover:text-accent-foreground",
 };
 
 export function Anchor({
