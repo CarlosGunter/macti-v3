@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Hind_Madurai, Lora, Montserrat } from "next/font/google";
 import "./globals.css";
+import { Footer } from "@/shared/components/common/Footer";
 
 const montserrat = Montserrat({
   weight: ["300", "400", "600", "700"],
@@ -33,9 +34,10 @@ export default function RootLayout({
   return (
     <html lang="es" className="scheme-light-dark">
       <body
-        className={`${montserrat.variable} ${hindMadurai.variable} ${lora.variable} antialiased`}
+        className={`${montserrat.variable} ${hindMadurai.variable} ${lora.variable} antialiased flex flex-col min-h-screen justify-between items-center bg-background text-foreground selection:bg-accent selection:text-accent-foreground`}
       >
         {children}
+        <Footer />
       </body>
     </html>
   );
