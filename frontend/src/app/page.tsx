@@ -6,9 +6,11 @@ export default function Home() {
   return (
     <>
       <HeaderBasic />
-      <div className="max-w-7xl mx-auto p-2 my-6 w-full">
-        <main className="grid gap-4 w-full">
-          <h2 className="text-4xl font-bold">Explorar Dependencias</h2>
+      <div className="max-w-11/12 mx-auto px-2 md:px-0 w-full">
+        <main className="grid gap-6 w-full">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            Explorar Dependencias
+          </h2>
           <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
             {Object.entries(institutes).map(([key, institute]) => (
               <InstituteCard key={key} id={key} {...institute} />
