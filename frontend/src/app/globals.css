@@ -25,6 +25,9 @@
   --font-headers: var(--font-montserrat);
   --font-text: var(--font-hind-madurai);
 
+  --color-accent-invert: var(--accent-invert);
+  --color-accent-invert-foreground: var(--accent-invert-foreground);
+
   /* shadcn */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -67,6 +70,10 @@
 }
 
 :root {
+  /* self */
+  --accent-invert: #fff;
+  --accent-invert-foreground: #d9a500;
+
   /* shadcn */
   --radius: 0.625rem;
   --background: light-dark(#e3f8cf, #1a353e);
@@ -75,14 +82,14 @@
   --card-foreground: light-dark(#0b2027, #00d9da);
   --popover: light-dark(#e3f8cf, #0b2027);
   --popover-foreground: light-dark(#0b2027, #e3f8cf);
-  --primary: light-dark(#1aafa7, #00d9da);
-  --primary-foreground: light-dark(#e3f8cf, #e3f8cf);
+  --primary: light-dark(#fff, #00d9da);
+  --primary-foreground: light-dark(#0b2027, #e3f8cf);
   --secondary: light-dark(#013b75, oklch(0.269 0 0));
   --secondary-foreground: light-dark(#fff, oklch(0.985 0 0));
   --muted: light-dark(oklch(0.97 0 0), oklch(0.269 0 0));
   --muted-foreground: light-dark(oklch(0.556 0 0), oklch(0.708 0 0));
-  --accent: light-dark(#c9c96b, oklch(0.269 0 0));
-  --accent-foreground: light-dark(#d9a500, oklch(0.985 0 0));
+  --accent: light-dark(#d9a500, oklch(0.269 0 0));
+  --accent-foreground: light-dark(#fff, oklch(0.985 0 0));
   --destructive: light-dark(oklch(0.577 0.245 27.325), oklch(0.704 0.191 22.216));
   --border: light-dark(#d9a500, oklch(1 0 0 / 10%));
   --input: light-dark(#1a353e, oklch(1 0 0 / 15%));
