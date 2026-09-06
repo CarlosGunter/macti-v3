@@ -34,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="es" className="scheme-light-dark">
       <body
-        className={`${montserrat.variable} ${hindMadurai.variable} ${lora.variable} antialiased flex flex-col min-h-screen justify-between items-center bg-background text-foreground selection:bg-accent selection:text-accent-foreground`}
+        className={`${montserrat.variable} ${hindMadurai.variable} ${lora.variable} antialiased flex flex-col gap-6 min-h-screen justify-between items-center bg-background text-foreground selection:bg-accent selection:text-accent-foreground`}
       >
         {children}
         <Footer />
