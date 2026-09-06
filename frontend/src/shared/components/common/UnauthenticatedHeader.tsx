@@ -8,9 +8,7 @@ interface UnauthenticatedHeaderProps {
 export function UnauthenticatedHeader({ institute }: UnauthenticatedHeaderProps) {
   return (
     <div className="flex gap-2">
-      <Anchor href={`./registro?institute=${institute}`} variant="secondary">
-        Registro
-      </Anchor>
+      <Anchor href={`./registro?institute=${institute}`}>Registro</Anchor>
       <LoginButton institute={institute} />
     </div>
   );
