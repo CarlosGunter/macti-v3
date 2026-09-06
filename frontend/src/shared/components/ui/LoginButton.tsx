@@ -15,10 +15,10 @@ export function LoginButton({ institute }: { institute: string }) {
           callbackURL: `${process.env.NEXT_PUBLIC_APP_URL}/${institute}/perfil`,
         });
       }}
-      className="text-xl"
+      className="text-xl group"
     >
       Iniciar sesión
-      <Arrow />
+      <Arrow className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
     </Button>
   );
 }
