@@ -62,7 +62,7 @@ Para iniciar el servidor de desarrollo local:
 pnpm dev
 ```
 
-El servidor estará corriendo en [http://127.0.0.1:3000](http://127.0.0.1:3000).
+El servidor estará corriendo en [http://127.0.0.1:3000/macti](http://127.0.0.1:3000/macti).
 
 ---
 

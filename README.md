@@ -74,7 +74,7 @@ cd frontend
 pnpm install
 pnpm dev
 ```
-La interfaz estará lista en [http://127.0.0.1:3000](http://127.0.0.1:3000).
+La interfaz estará lista en [http://127.0.0.1:3000/macti](http://127.0.0.1:3000/macti).
 
 ### Paso 3: Iniciar el Backend
 En otra terminal o pestaña:
