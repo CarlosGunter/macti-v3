@@ -2,8 +2,7 @@
 
 import Link from "next/dist/client/link";
 import type { StaticImageData } from "next/image";
-import { usePathname } from "next/navigation";
-import { LoginCardButton } from "./ui/LoginInCardButton";
+import Image from "next/image";
 
 interface Institute {
   id: string;
@@ -13,30 +12,23 @@ interface Institute {
 }
 
 export default function InstituteCard({ id, name, details, image }: Institute) {
-  const pathname = usePathname();
-  const registroPath = `${pathname === "/" ? "" : pathname}/registro?institute=${id}`;
-
   return (
-    <article className="relative grid group rounded-2xl overflow-hidden">
+    <article>
       <Link
-        className="h-48 rounded-2xl bg-black/50 bg-(image:--img) bg-cover bg-center bg-no-repeat bg-blend-darken row-start-1 row-end-2 col-start-1 col-end-2"
         href={details}
-        style={{ "--img": `url(${image.src})` } as React.CSSProperties}
-      />
-      <div className="grid place-items-center h-48 pointer-events-none grid-rows-1 grid-cols-1 row-start-1 row-end-2 col-start-1 col-end-2 text-white">
-        <h2 className="text-center font-bold text-lg transition-[translate] -translate-y-10 md:translate-0 md:group-hover:-translate-y-10">
-          {name}
-        </h2>
-        <div className="absolute inset-x-0 bottom-7 flex justify-center gap-2 md:opacity-0 md:translate-y-7 transition-[opacity,transform,translate] md:group-hover:opacity-100 md:group-hover:translate-y-0">
-          <LoginCardButton institute={id} />
-          <Link
-            href={registroPath}
-            className="px-4 py-2 rounded-sm bg-black/40 hover:bg-black/70 active:bg-black/90 cursor-pointer pointer-events-auto"
-          >
-            Registro
-          </Link>
+        className="group block border border-background rounded-2xl overflow-hidden  hover:shadow-md transition-all group shadow-xl flex-col h-full transform hover:-translate-y-1 hover:border-border duration-200 text-card-foreground bg-card hover:bg-accent/50"
+      >
+        <div className="w-full h-62.5 overflow-hidden flex items-center justify-center">
+          <Image
+            src={image}
+            alt="Logo Instituto"
+            className="h-full w-full object-cover group-hover:saturate-150 transition-all"
+          />
         </div>
-      </div>
+        <div className="border-t border-[#0a231c]/20 p-4 text-center transition-colors">
+          <p className="text-sm font-semibold tracking-wide">{name}</p>
+        </div>
+      </Link>
     </article>
   );
 }
