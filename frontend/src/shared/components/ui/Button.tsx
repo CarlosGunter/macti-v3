@@ -13,7 +13,8 @@ interface ButtonProps {
 const variants = {
   recommended: "bg-green-700 text-white hover:bg-green-600",
   danger: "bg-red-700 text-white hover:bg-red-600",
-  default: "bg-primary text-primary-foreground hover:bg-primary/90",
+  default:
+    "bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground",
 };
 
 export default function Button({
@@ -30,7 +31,7 @@ export default function Button({
       onClick={onClick}
       type={type}
       disabled={disabled || isLoading}
-      className={`flex justify-center items-center gap-2 p-2 rounded-lg transition-shadow duration-200 ${variants[variant]} ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${isLoading && "cursor-progress"} ${className}`}
+      className={`inline-flex items-center gap-2 duration-200 px-4 py-2 rounded-xl shadow-lg transition-all ${variants[variant]} ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${isLoading && "cursor-progress"} ${className}`}
     >
       {isLoading && <Spinner />}
       {children}

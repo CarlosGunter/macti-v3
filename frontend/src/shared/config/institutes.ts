@@ -1,15 +1,14 @@
 import type { StaticImageData } from "next/image";
-
-import ciencias from "@/assets/image/institutes/ciencias.webp";
 import cuantico from "@/assets/image/institutes/cuantico.webp";
 import encit from "@/assets/image/institutes/encit.webp";
 import enes_jur from "@/assets/image/institutes/enes_jur.webp";
 import enes_m from "@/assets/image/institutes/enes_m.webp";
 import hpc from "@/assets/image/institutes/hpc.webp";
 import ier from "@/assets/image/institutes/ier.webp";
-import igf from "@/assets/image/institutes/igf.webp";
-import ingenieria from "@/assets/image/institutes/ingenieria.webp";
-import principal from "@/assets/image/institutes/principal.webp";
+import principal from "@/assets/images/CU_Rectoria.webp";
+import ciencias from "@/assets/images/Facultad_de_Ciencias.png";
+import ingenieria from "@/assets/images/Facultad_de_Ingenieria.jpg";
+import igf from "@/assets/images/Igef_.png";
 
 type Institute = {
   name: string;

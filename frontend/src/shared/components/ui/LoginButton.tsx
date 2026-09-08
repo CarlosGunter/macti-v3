@@ -1,5 +1,6 @@
 "use client";
 
+import { Arrow } from "@/assets/icons/arrow";
 import { getAuthClient } from "@/infra/auth/auth-client";
 import Button from "./Button";
 
@@ -14,8 +15,10 @@ export function LoginButton({ institute }: { institute: string }) {
           callbackURL: `${process.env.NEXT_PUBLIC_APP_URL}/${institute}/perfil`,
         });
       }}
+      className="text-xl group"
     >
       Iniciar sesión
+      <Arrow className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
     </Button>
   );
 }
