@@ -58,10 +58,14 @@ ENV PYTHONPATH="/app"
 # Evitar que Python guarde en buffer los logs (vital para ver logs en tiempo real en tu self-host)
 ENV PYTHONUNBUFFERED=1
 
+#Creamos la ruta de LOGS_DIR
+RUN mkdir -p /var/log/macti \
+    && chown -R nonroot:nonroot /var/log/macti
+
 # Cambiar al usuario seguro
 USER nonroot
 
 EXPOSE 8000
 
-# Ejecutar FastAPI mediante el CLI oficial en producción
+# Ejecutar FastAPI mediante el CLI oficial en producción 
 CMD ["fastapi", "run", "--host", "0.0.0.0", "--port", "8000"]

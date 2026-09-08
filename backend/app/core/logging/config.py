@@ -10,10 +10,13 @@ import sys
 from pathlib import Path
 
 from loguru import logger
+#Mandamos a llamar le environment para traer LOGS_DIR
+from app.core.environment import environment
+
 
 # Ruta dentro del proyecto
-LOG_DIR = Path(__file__).parent / "logs"
-LOG_DIR.mkdir(parents=True, exist_ok=True)
+log_dir = Path(environment.LOGS_DIR)
+log_dir.mkdir(parents=True, exist_ok=True)
 
 # Formato JSON para parseo automático por Fluentd/Logstash
 JSON_FORMAT = (
@@ -56,7 +59,7 @@ def setup_logging():
 
     # 2. Sink de errores: un archivo por día, JSON, 30 días de retención
     logger.add(
-        LOG_DIR / "error_{time:YYYY-MM-DD}.jsonl",
+        log_dir / "error_{time:YYYY-MM-DD}.jsonl",
         format=JSON_FORMAT,
         level="ERROR",
         rotation="00:00",
@@ -70,7 +73,7 @@ def setup_logging():
 
     # 3. Sink de aplicación: info, seguridad, auditoría
     logger.add(
-        LOG_DIR / "app_{time:YYYY-MM-DD}.jsonl",
+        log_dir / "app_{time:YYYY-MM-DD}.jsonl",
         format=JSON_FORMAT,
         level="INFO",
         rotation="00:00",
@@ -83,7 +86,7 @@ def setup_logging():
 
     # 4. Sink crítico separado para alertas
     logger.add(
-        LOG_DIR / "critical_{time:YYYY-MM-DD}.jsonl",
+        log_dir / "critical_{time:YYYY-MM-DD}.jsonl",
         format=JSON_FORMAT,
         level="CRITICAL",
         rotation="00:00",

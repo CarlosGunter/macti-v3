@@ -4,7 +4,7 @@
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
-
+from pydantic import Field
 
 class EnvironmentConfigs(BaseSettings):
     """
@@ -45,6 +45,12 @@ class EnvironmentConfigs(BaseSettings):
     REDIS_DB: int = 0
     REDIS_PASSWORD: str = ""
     REDIS_CACHE_TTL: int = 300  # 5 minutos por defecto
+
+    #Creamos una variable llamda LOGS_DIR
+    LOGS_DIR: str = Field(
+        default="/var/log/macti",
+        description="Ruta en el servidor para almacenar los logs rotativos",
+    )
 
     @field_validator("APP_ENV")
     @classmethod
