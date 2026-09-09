@@ -50,4 +50,3 @@ export async function tryCatch<T, E = Error>(promise: Promise<T>): Promise<Resul
     return { data: null, error: error as E };
   }
 }
-

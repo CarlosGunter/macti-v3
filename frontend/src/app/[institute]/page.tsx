@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import ListInstituteCourses from "@/domains/courses/components/ListInstituteCourses";
-import { Anchor } from "@/shared/components/ui/Anchor";
 import { institutes } from "@/shared/config/institutes";
 
 export const revalidate = 3600; // 1 hora en segundos
