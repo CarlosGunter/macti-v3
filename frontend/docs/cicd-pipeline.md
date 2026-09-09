@@ -128,7 +128,7 @@ data:
 ```
 
 #### C. Secret (`macti-frontend-secrets.yaml`)
-Variables confidenciales requeridas por el servidor (ej. Better Auth):
+Variables confidenciales requeridas por el servidor (ej. Better Auth y pool de PostgreSQL):
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -136,8 +136,8 @@ metadata:
   name: macti-frontend-secrets
 type: Opaque
 stringData:
-  BETTER_AUTH_SECRET: "<SECRET_KEY_BETTER_AUTH>"
-  SESSION_DB_URL: "postgresql://auth_user:<PASSWORD>@postgres-service:5432/auth_db"
+  BETTER_AUTH_SECRET: "<SECRET_KEY_BETTER_AUTH_32_BYTES>"
+  DATABASE_URL: "postgresql://auth_user:<PASSWORD>@postgres-service:5432/auth_db"
 ```
 
 #### D. Ingress & Service
@@ -164,3 +164,12 @@ Si se detecta alguna anomalía tras la actualización:
 ```bash
 kubectl rollout undo deployment/macti-frontend-deployment -n macti-prod
 ```
+
+---
+
+## 🔗 6. Documentación Relacionada
+
+* 🌐 [Variables de Entorno](./variables-entorno.md): Catálogo completo, ciclo de vida build-time vs. runtime y manifiestos de Kubernetes.
+* 🐳 [Generación de Imágenes Docker](./generacion-imagenes.md): Proceso de construcción multi-stage y uso de `.next/standalone`.
+* 🏛️ [Arquitectura del Frontend](./arquitectura-frontend.md): Estructura global del frontend y dependencias del sistema.
+* 📋 [Requerimientos Frontend](./requerimientos-frontend.md): Requerimientos no funcionales de despliegue y calidad.

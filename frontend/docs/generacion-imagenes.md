@@ -95,6 +95,17 @@ graph TD
   - Generación de artefactos standalone en `.next/standalone` y archivos estáticos en `.next/static`.
   - Deshabilitación de telemetría de Next.js (`NEXT_TELEMETRY_DISABLED=1`).
 
+#### 🛡️ Aislamiento de Infraestructura en Compilación: El rol de `NEXT_PHASE`
+Durante la ejecución de `pnpm build` en Docker, el contenedor se encuentra completamente aislado de la infraestructura de producción: **no existe conexión a PostgreSQL, SQLite ni al clúster de Kubernetes**.
+
+Next.js evalúa estáticamente los módulos de servidor (RSC, Route Handlers y Server Actions) para determinar las rutas y generar trazas de archivos (`output: 'standalone'`). Si módulos críticos como [`auth-factory.ts`](../src/infra/auth/auth-factory.ts) intentaran inicializar el pool de base de datos (`pg.Pool`) o validar credenciales reales durante esta etapa, la construcción de la imagen fallaría con errores de conexión (`ECONNREFUSED` o `DATABASE_URL no definida`).
+
+Para evitar esto, Next.js expone internamente la variable:
+```typescript
+process.env.NEXT_PHASE === "phase-production-build" // PHASE_PRODUCTION_BUILD
+```
+El código de MACTI utiliza esta variable como un interruptor de seguridad (*build switch*): cuando detecta que se está ejecutando el comando de compilación dentro del Dockerfile, devuelve instancias ligeras simuladas (`genericAuthInstance`) sin tocar la base de datos ni servicios externos, permitiendo que la imagen Docker se construya de forma hermética, predecible y reproducible en cualquier entorno de CI/CD.
+
 ### Stage 3: `runner` (Entorno de Producción)
 - **Base**: `node:24.17.0-slim`
 - **Propósito**: Servidor de producción en ejecución ligera.
@@ -133,3 +144,12 @@ La construcción de la imagen del frontend está automatizada en [.github/workfl
 1. **Filtro de Ejecución**: Se ejecuta en `push`/`pull_request` sobre `dev` cuando hay cambios en la carpeta `frontend/`.
 2. **Validación de Calidad**: Verificación estricta de linter y formateador con Biome (`pnpm exec biome ci ./src`).
 3. **Build & Push**: Construcción de la imagen multi-etapa y publicación automatizada en GitHub Container Registry (`ghcr.io`).
+
+---
+
+## 🔗 7. Documentación Relacionada
+
+* 🌐 [Variables de Entorno](./variables-entorno.md): Catálogo completo, ciclo de vida build-time vs. runtime y ejemplos de Dockerfile.
+* 🔄 [Pipeline de CI/CD](./cicd-pipeline.md): Flujo automatizado de construcción y publicación de imágenes en GitHub Actions.
+* 🏛️ [Arquitectura del Frontend](./arquitectura-frontend.md): Arquitectura general, App Router y modo standalone.
+* 🛡️ [Middleware Proxy (`proxy.ts`)](./proxy.md): Manejo del `basePath` y redirección en tiempo de ejecución.

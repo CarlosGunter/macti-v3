@@ -178,3 +178,12 @@ flowchart TB
 ## 📄 6. Conclusión y Próximos Pasos
 
 Este documento sirve como la especificación formal del Frontend de MACTI. Cualquier adición de nuevas características o refactorización del código debe alinearse con los requerimientos funcionales y de calidad aquí descritos.
+
+---
+
+## 🔗 7. Documentación Relacionada
+
+* 🌐 [Variables de Entorno](./variables-entorno.md): Parametrización para el cumplimiento de RNF-03 (seguridad en cookies y tokens) y RF-01 a RF-06 (autenticación multitenant).
+* 🏛️ [Arquitectura del Frontend](./arquitectura-frontend.md): Estructura técnica por capas y componentes.
+* 🔐 [Autenticación OIDC y Base de Datos de Sesiones](./autenticacion-y-base-de-datos.md): Implementación de Better Auth y Keycloak.
+* 🛡️ [Middleware Proxy (`proxy.ts`)](./proxy.md): Protección de rutas y redirecciones en el borde.

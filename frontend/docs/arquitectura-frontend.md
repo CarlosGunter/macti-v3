@@ -43,7 +43,7 @@ El código fuente dentro de `src/` está organizado en 4 capas principales más 
 
 ```
 src/
-├── app/                    # Capa de Enrutamiento y Páginas (Next.js App Router)
+├── app/                   # Capa de Enrutamiento y Páginas (Next.js App Router)
 │   ├── [institute]/       # Rutas dinámicas multitenant por instituto/facultad
 │   │   ├── [courseId]/    # Rutas dinámicas por curso (ej. solicitudes, catálogo)
 │   │   └── perfil/        # Gestión del perfil de usuario por instituto
@@ -248,3 +248,8 @@ sequenceDiagram
 * 📋 [Requerimientos Frontend](./requerimientos-frontend.md): Especificación de requerimientos funcionales y no funcionales.
 * 📚 [README Frontend](../README.md): Guía de instalación, configuración y ejecución del proyecto.
 * 🤖 [Reglas del Agente Frontend](../.agents/AGENTS.md): Directivas de desarrollo para asistentes y colaboradores.
+* 🌐 [Guía de Creación de Servicios y Validaciones](./guia-creacion-servicios.md): Patrones, uso de `processFetch`, Zod y consumo de APIs.
+* 🧩 [Guía de Creación y Uso de Componentes](./guia-componentes-y-shadcn.md): Criterios de diseño, estructura de `src/shared/components` e integración con Shadcn UI.
+* 🛠️ [Guía de Utilidades Compartidas](./utils.md): Referencia rápida sobre `tryCatch` y `processFetch`.
+* 🕒 [Autenticación y Base de Datos de Sesiones](./autenticacion-y-base-de-datos.md): Configuración y manejo de autenticación y persistencia de sesiones.
+* 🌐 [Variables de Entorno](./variables-entorno.md): Catálogo exhaustivo, ciclo de vida (build vs runtime) y configuración por entornos.
