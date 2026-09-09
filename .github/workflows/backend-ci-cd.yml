@@ -84,29 +84,29 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      # - name: Configurar uv
-      #   uses: astral-sh/setup-uv@v7
+      - name: Configurar uv
+        uses: astral-sh/setup-uv@v7
 
-      # - name: Configurar Python
-      #   uses: actions/setup-python@v5
-      #   with:
-      #     python-version: ${{ env.PYTHON_VERSION }}
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      # - name: Instalar dependencias de desarrollo
-      #   run: uv sync --locked --group dev
-      #   working-directory: backend
+      - name: Instalar dependencias de desarrollo
+        run: uv sync --locked --group dev
+        working-directory: backend
 
-      # - name: Validar Ruff (Linter)
-      #   run: uv run ruff check .
-      #   working-directory: backend
+      - name: Validar Ruff (Linter)
+        run: uv run ruff check .
+        working-directory: backend
 
-      # - name: Validar formato con Ruff
-      #   run: uv run ruff format --check .
-      #   working-directory: backend
+      - name: Validar formato con Ruff
+        run: uv run ruff format --check .
+        working-directory: backend
 
-      # - name: Validar tipos con Pyright
-      #   run: uvx pyright --venvpath .
-      #   working-directory: backend
+      - name: Validar tipos con Pyright
+        run: uvx pyright --venvpath .
+        working-directory: backend
 
   build-and-push:
     name: Construcción y Publicación de API
