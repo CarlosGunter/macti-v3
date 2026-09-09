@@ -52,10 +52,15 @@ uv run fastapi dev
 
 ---
 
+## Documentación y Referencias
+- **Referencia a assets o recursos**: Si se requiere hacer referencia a assets o recursos externos, se debe **utilizar rutas relativas** dentro del proyecto y evitar enlaces absolutos o externos que puedan romperse.
+
+---
+
 ## 🔍 Carga Dinámica de Contexto por Capas (Skills)
 
 Para optimizar el uso de tokens y mantener el contexto de la conversación limpio, los detalles de la base de datos, arquitectura y control de versiones se manejan a través de Skills específicos:
 
-- **Base de Datos y Modelos**: Consulta el skill `macti-backend-db` en [skills/macti-backend-db/SKILL.md](skills/macti-backend-db/SKILL.md).
-- **Arquitectura MVCS**: Consulta el skill `macti-backend-arch` en [skills/macti-backend-arch/SKILL.md](skills/macti-backend-arch/SKILL.md).
-- **Git y Control de Versiones**: Consulta el skill `macti-backend-git` en [skills/macti-backend-git/SKILL.md](skills/macti-backend-git/SKILL.md).
+- **Base de Datos y Modelos**: Consulta el skill `macti-backend-db` en [.agents/skills/macti-backend-db/SKILL.md](.agents/skills/macti-backend-db/SKILL.md).
+- **Arquitectura MVCS**: Consulta el skill `macti-backend-arch` en [.agents/skills/macti-backend-arch/SKILL.md](.agents/skills/macti-backend-arch/SKILL.md).
+- **Git y Control de Versiones**: Consulta el skill `macti-backend-git` en [.agents/skills/macti-backend-git/SKILL.md](.agents/skills/macti-backend-git/SKILL.md).

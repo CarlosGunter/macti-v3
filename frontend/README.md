@@ -2,7 +2,7 @@
 
 > 🎓 **M**ateriales didácticos para **A**nálisis **C**omputacional **T**écnico y **I**nvestigación
 
-Una plataforma educativa moderna construida con Next.js que alberga materiales didácticos, haciendo énfasis en ejemplos prácticos y aplicaciones de conceptos abstractos para cursos semestrales de Análisis Numérico y Ecuaciones Diferenciales.
+Una plataforma web moderna y dashboard centralizado construido con Next.js que consolida la administración de usuarios, la gestión de cursos y el flujo de aprendizaje de MACTI, ofreciendo soporte multitenant y acceso a materiales didácticos, simulaciones y cuadernos interactivos para cursos de Análisis Numérico y Ecuaciones Diferenciales.
 
 ---
 
@@ -25,20 +25,23 @@ La estructura de código dentro del directorio `src/` está organizada de la sig
 
 ```
 src/
-├── app/                    # App Router de Next.js (Rutas y vistas)
+├── app/                    # App Router de Next.js (Rutas y vistas multitenant)
 │   ├── [institute]/       # Rutas dinámicas basadas en el instituto
-│   └── globals.css        # Estilos globales y Tailwind CSS
-├── domains/               # Lógica y dominios de negocio
-│   ├── auth/             # Módulo de autenticación y lógica asociada
-│   └── home/             # Componentes y lógica de la página de inicio
-├── assets/               # Recursos estáticos locales
-│   ├── image/           # Imágenes generales
-│   └── logos/           # Logotipos institucionales
-├── shared/              # Código reutilizable y compartido
-│   ├── components/      # Componentes UI reutilizables (shadcn/radix)
-│   ├── config/         # Configuraciones globales
-│   └── services/       # Clientes de APIs y llamadas de red
-└── lib/                # Utilidades, clases helpers y formateadores
+│   └── globals.css        # Estilos globales y tokens de Tailwind CSS v4
+├── domains/               # Lógica y dominios de negocio (DDD)
+│   ├── courses/          # Gestión y catálogo de cursos
+│   ├── register/         # Solicitudes y registro de usuarios
+│   └── users/            # Perfiles y administración de roles
+├── infra/                 # Infraestructura, adaptadores y persistencia
+│   ├── auth/             # Fábrica y cliente de Better Auth (OIDC Keycloak)
+│   └── db/               # Persistencia de sesiones (PostgreSQL / SQLite)
+├── assets/                # Recursos estáticos locales (logos institucionales)
+└── shared/                # Código reutilizable y transversal
+    ├── components/       # Componentes UI con identidad MACTI (common, feedback, ui)
+    ├── shadcn/           # Primitivos atómicos y accesibles de Shadcn / Radix UI
+    ├── config/           # Configuraciones y constantes globales
+    ├── providers/        # Proveedores de contexto de React y React Query
+    └── utils/            # Funciones auxiliares puras (processFetch, tryCatch)
 ```
 
 ---
@@ -83,3 +86,20 @@ Cualquier cambio realizado en este repositorio debe respetar las directivas espe
 - **Docstrings & Comentarios**: Es mandatorio documentar componentes y funciones importantes utilizando JSDoc.
 - **Formateo**: Ejecuta `pnpm lint` antes de realizar tus confirmaciones para corregir el estilo del código con Biome.
 - **Mensajes de Commit**: Deben redactarse obligatoriamente en **español**, en **tiempo pasado** y seguir la convención de **Conventional Commits** sin omitir detalles de los cambios realizados.
+
+---
+
+## 📚 Documentación Técnica Adicional
+
+Para más detalles sobre los estándares y decisiones arquitectónicas, consulta las guías en el directorio `docs/`:
+- 🏛️ [Arquitectura del Frontend](docs/arquitectura-frontend.md)
+- 🌐 [Variables de Entorno](docs/variables-entorno.md)
+- 🧩 [Guía de Creación y Uso de Componentes (Shared & Shadcn)](docs/guia-componentes-y-shadcn.md)
+- 🌐 [Guía de Creación de Servicios y Validaciones](docs/guia-creacion-servicios.md)
+- 🛠️ [Utilidades Compartidas (`tryCatch` y `processFetch`)](docs/utils.md)
+- 🕒 [Autenticación OIDC y Base de Datos de Sesiones](docs/autenticacion-y-base-de-datos.md)
+- 🛡️ [Middleware de Enrutamiento y Autenticación (`proxy.ts`)](docs/proxy.md)
+- 🛣️ [Enrutamiento con Base Path (`NEXT_PUBLIC_BASE_PATH`)](docs/basepath.md)
+- 🔄 [Pipeline de CI/CD y Despliegue en Kubernetes](docs/cicd-pipeline.md)
+- 🐳 [Generación de Imágenes Docker](docs/generacion-imagenes.md)
+- 📋 [Requerimientos del Frontend](docs/requerimientos-frontend.md)
