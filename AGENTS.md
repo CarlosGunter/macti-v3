@@ -28,3 +28,28 @@ Cuando vayas a realizar modificaciones, tareas de investigación, depuración o 
 1. **Identifica** el ámbito en el que vas a trabajar (`backend/` o `frontend/`) y la tarea específica (Base de Datos, Arquitectura, Flujo de Trabajo, Git, etc.).
 2. **Lee de forma obligatoria** el Skill relevante utilizando la herramienta `view_file` al inicio de tu tarea si necesitas detalles sobre los estándares y convenciones específicos.
 3. **No intentes leer todas las reglas de una sola vez**, utiliza únicamente los Skills necesarios para la tarea actual para optimizar el contexto.
+
+## Commits
+Los mensajes de commit deben seguir estrictamente el estándar de Conventional Commits:
+
+- **Estructura**:
+  ```
+  <tipo>(<alcance opcional>): <descripción>
+  
+  [cuerpo del mensaje opcional]
+  ```
+- **Tipos de Commit permitidos**:
+  - `feat`: Añade una nueva característica o funcionalidad.
+  - `fix`: Resuelve un error o bug.
+  - `docs`: Modifica o añade documentación.
+  - `style`: Cambios de formato y estilo de código (espacios, comas, etc.) sin cambiar la semántica del código. **No aplica** para modificaciones visuales de estilos (CSS, SCSS, Tailwind, etc.).
+  - `refactor`: Reorganización de código sin corregir un error ni añadir funcionalidad.
+  - `perf`: Mejoras de rendimiento.
+  - `test`: Añade o corrige pruebas.
+  - `build`: Cambios que afectan el sistema de empaquetado o dependencias externas (ej. pnpm-lock.yaml).
+  - `ci`: Cambios en la configuración de integración o despliegue continuo (CI/CD).
+  - `chore`: Tareas de mantenimiento o configuración general del frontend.
+
+- **Idioma Obligatorio**: Español.
+- **Tiempo Verbal**: Pasado (ej. `feat: se implementó inicio de sesión`, `fix: se corrigió error en base de datos`).
+- **Cuerpo**: Si existen múltiples cambios, enuméralos en orden de mayor a menor relevancia.
