@@ -27,4 +27,4 @@ Este archivo contiene las pautas y restricciones específicas para los agentes q
 
 Para optimizar el uso de tokens y mantener el contexto de la conversación limpio, las reglas detalladas de Git y control de versiones se manejan a través de un Skill específico:
 
-- **Git y Control de Versiones**: Consulta el skill `macti-frontend-git` en [skills/macti-frontend-git/SKILL.md](skills/macti-frontend-git/SKILL.md).
+- **Git y Control de Versiones**: Consulta el skill `macti-frontend-git` en [.agents/skills/macti-frontend-git/SKILL.md](.agents/skills/macti-frontend-git/SKILL.md).

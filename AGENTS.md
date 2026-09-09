@@ -16,12 +16,12 @@ El proyecto está organizado como un monorrepocito que contiene dos aplicaciones
 Para evitar saturar la memoria y el contexto de la conversación con detalles innecesarios de todo el repositorio, **las reglas generales residen en los archivos AGENTS.md de cada capa, y los detalles complejos están divididos en Skills específicos** dentro de sus carpetas `.agents/skills/` correspondientes:
 
 ### Backend Skills:
-- **Base de Datos y Modelos**: [macti-backend-db](../backend/.agents/skills/macti-backend-db/SKILL.md) (PostgreSQL, SQLite, SQLAlchemy, Alembic, Repositorios).
-- **Arquitectura**: [macti-backend-arch](../backend/.agents/skills/macti-backend-arch/SKILL.md) (Rutas, Esquemas, Controladores, Módulos).
-- **Git/Commits**: [macti-backend-git](../backend/.agents/skills/macti-backend-git/SKILL.md) (Ramas, Commits convencionales, Pull Requests del backend).
+- **Base de Datos y Modelos**: [macti-backend-db](backend/.agents/skills/macti-backend-db/SKILL.md) (PostgreSQL, SQLite, SQLAlchemy, Alembic, Repositorios).
+- **Arquitectura**: [macti-backend-arch](backend/.agents/skills/macti-backend-arch/SKILL.md) (Rutas, Esquemas, Controladores, Módulos).
+- **Git/Commits**: [macti-backend-git](backend/.agents/skills/macti-backend-git/SKILL.md) (Ramas, Commits convencionales, Pull Requests del backend).
 
 ### Frontend Skills:
-- **Git/Commits**: [macti-frontend-git](../frontend/.agents/skills/macti-frontend-git/SKILL.md) (Ramas, Commits convencionales, Pull Requests del frontend).
+- **Git/Commits**: [macti-frontend-git](frontend/.agents/skills/macti-frontend-git/SKILL.md) (Ramas, Commits convencionales, Pull Requests del frontend).
 
 ### Instrucciones para el Agente:
 Cuando vayas a realizar modificaciones, tareas de investigación, depuración o desarrollo de nuevas funcionalidades:
