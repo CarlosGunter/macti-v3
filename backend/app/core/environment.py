@@ -2,10 +2,9 @@
 # Este módulo utiliza Pydantic Settings para cargar, tipar y validar todas las
 # credenciales y configuraciones sensibles alojadas en el archivo .env.
 
-from pydantic import field_validator
+# Agregamos la importación
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
-#Agregamos la importación
-from pydantic import Field
 
 
 class EnvironmentConfigs(BaseSettings):

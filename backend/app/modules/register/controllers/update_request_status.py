@@ -6,6 +6,8 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+# Agregamos la importación de logging para registrar errores y eventos importantes
+from app.core.logging.macti_logger import log_macti_error
 from app.modules.register.repositories.request_status_repository import (
     RequestStatusRepository,
 )
@@ -22,8 +24,7 @@ from app.shared.enums.role_enum import AccountRoleEnum
 from app.shared.enums.status_enum import RequestStatusEnum
 from app.shared.models.student_courses_model import StudentCourseRequest
 from app.shared.models.teacher_courses_model import TeacherCourseRequest
-#Agregamos la importación de logging para registrar errores y eventos importantes
-from app.core.logging.macti_logger import log_macti_error
+
 
 class RequestStatusController:
     """
@@ -272,7 +273,9 @@ class RequestStatusController:
             HTTPException si hay error al enviar el correo
         """
         # Generar token de verificación
-        token_record = repository.create_or_update_verification_token(course_request.auth.id)
+        token_record = repository.create_or_update_verification_token(
+            course_request.auth.id
+        )
         token_value = getattr(token_record, "token", token_record)
 
         # Enviar correo de validación con el token

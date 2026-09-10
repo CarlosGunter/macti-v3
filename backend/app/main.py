@@ -21,7 +21,8 @@ from app.modules.nbgrader.routes import sync_router
 from app.modules.register.routes import router as register_router
 from app.modules.temp.routes import router as temp_router
 from app.shared import models as _models  # noqa: F401
-#PAl logging
+
+# PAl logging
 
 
 @asynccontextmanager

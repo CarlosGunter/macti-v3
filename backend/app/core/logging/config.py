@@ -5,11 +5,13 @@ Los logs se almacenan en app/core/logging/logs/ dentro del proyecto.
 En producción, montar un PersistentVolume en esta ruta.
 """
 
-import sys
 import json
+import sys
 from pathlib import Path
-from app.core.environment import environment
+
 from loguru import logger
+
+from app.core.environment import environment
 
 # Ruta dentro del proyecto
 log_dir = Path(environment.LOGS_DIR).resolve()
@@ -24,6 +26,7 @@ STDERR_FORMAT = (
     "<level>{message}</level>\n"
 )
 
+
 def json_formatter(record):
     """Formatea el record como JSON válido para archivos .jsonl"""
     log_entry = {
@@ -34,9 +37,11 @@ def json_formatter(record):
         "line": record["line"],
         "function": record["function"],
         "message": record["message"],
-        "extra": record["extra"].get("payload", {})
+        "extra": record["extra"].get("payload", {}),
     }
-    record["extra"]["serialized"] = json.dumps(log_entry, ensure_ascii=False, default=str)
+    record["extra"]["serialized"] = json.dumps(
+        log_entry, ensure_ascii=False, default=str
+    )
     return "{extra[serialized]}\n"
 
 
