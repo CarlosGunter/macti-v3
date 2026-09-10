@@ -3,9 +3,11 @@ name: Branch Gatekeeper
 on:
   pull_request:
     branches:
+      - dev
       - main
   push:
     branches:
+      - dev
       - main
 
 permissions:
@@ -20,28 +22,50 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      - name: Validar origen del Pull Request hacia main
+      - name: Validar origen del Pull Request
         if: github.event_name == 'pull_request'
+        env:
+          PR_SOURCE_BRANCH: ${{ github.head_ref }}
+          PR_TARGET_BRANCH: ${{ github.base_ref }}
         run: |
-          echo "Verificando rama de origen del Pull Request hacia main..."
-          HEAD_REF="${{ github.head_ref }}"
-          echo "Rama origen: $HEAD_REF"
-          if [ "$HEAD_REF" != "dev" ]; then
-            echo "::error::Solo se permiten Pull Requests a 'main' desde la rama 'dev'. Rama origen actual: '$HEAD_REF'"
-            exit 1
-          fi
+          echo "Verificando reglas de ramas del Pull Request..."
+          echo "Rama origen: $PR_SOURCE_BRANCH"
+          echo "Rama destino: $PR_TARGET_BRANCH"
+
+          case "$PR_TARGET_BRANCH" in
+            dev)
+              if [ -z "$PR_SOURCE_BRANCH" ] || [ "$PR_SOURCE_BRANCH" = "dev" ]; then
+                echo "::error::Los Pull Requests hacia 'dev' deben originarse en una rama secundaria."
+                exit 1
+              fi
+              ;;
+            main)
+              if [ "$PR_SOURCE_BRANCH" != "dev" ]; then
+                echo "::error::Los Pull Requests hacia 'main' solo pueden originarse en la rama 'dev'."
+                exit 1
+              fi
+              ;;
+            *)
+              echo "::error::Rama destino no contemplada: '$PR_TARGET_BRANCH'."
+              exit 1
+              ;;
+          esac
+
           echo "Validación de PR exitosa."
 
-      - name: Validar origen del Push/Merge en main
+      - name: Validar origen del Push/Merge
         if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_BRANCH: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
         run: |
-          echo "Verificando procedencia del commit en main..."
+          echo "Verificando procedencia del commit en '$TARGET_BRANCH'..."
           PR_SOURCE=""
           for i in {1..10}; do
-            echo "Intento $i: Consultando PRs asociados al commit ${{ github.sha }}..."
-            PR_SOURCE=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }}/pulls --jq '.[0].head.ref' 2>/dev/null || echo "")
+            echo "Intento $i: Consultando PRs asociados al commit $COMMIT_SHA..."
+            PR_SOURCE=$(gh api "repos/$REPOSITORY/commits/$COMMIT_SHA/pulls" --jq ".[] | select(.base.ref == \"$TARGET_BRANCH\") | .head.ref" 2>/dev/null | head -n 1 || true)
             if [ -n "$PR_SOURCE" ]; then
               break
             fi
@@ -50,9 +74,24 @@ jobs:
           done
           
           echo "Rama origen detectada: '$PR_SOURCE'"
-          if [ "$PR_SOURCE" != "dev" ]; then
-            echo "::error::Se detectó un push directo o un merge en 'main' que no proviene de la rama 'dev'."
-            echo "Todos los cambios integrados en 'main' deben pasar primero por la rama 'dev'."
-            exit 1
-          fi
+
+          case "$TARGET_BRANCH" in
+            dev)
+              if [ -z "$PR_SOURCE" ] || [ "$PR_SOURCE" = "dev" ]; then
+                echo "::error::Se detectó un push directo o un merge en 'dev' que no proviene de una rama secundaria."
+                exit 1
+              fi
+              ;;
+            main)
+              if [ "$PR_SOURCE" != "dev" ]; then
+                echo "::error::Se detectó un push directo o un merge en 'main' que no proviene de la rama 'dev'."
+                exit 1
+              fi
+              ;;
+            *)
+              echo "::error::Rama destino no contemplada: '$TARGET_BRANCH'."
+              exit 1
+              ;;
+          esac
+
           echo "Validación de Push/Merge exitosa."
