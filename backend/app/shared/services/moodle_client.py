@@ -50,7 +50,7 @@ async def make_moodle_request(
             and isinstance(response_data, dict)
             and "exception" in response_data
         ):
-            #Agregamos log de error para seguimiento
+            # Agregamos log de error para seguimiento
             error_msg = f"Excepción Moodle [{response_data.get('errorcode')}]: {response_data.get('message')}"
             log_service_error(
                 logger_name="moodle_client",

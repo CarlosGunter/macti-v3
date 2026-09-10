@@ -59,10 +59,12 @@ class CreateCoursesResult:
     course_ids: list[int] = field(default_factory=list)
     error: str | None = None
 
+
 class MoodleService:
     """
     Clase estática que centraliza las operaciones de lectura y escritura en Moodle.
     """
+
     @staticmethod
     async def enroll_user(
         user_id: int,
@@ -121,7 +123,6 @@ class MoodleService:
             message=f"Usuario {user_id} matriculado con éxito en curso {course_id}",
         )
         return EnrollUserResult(enrolled=True, error=None)
-
 
     @staticmethod
     async def create_user(
