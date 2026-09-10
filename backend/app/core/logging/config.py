@@ -1,4 +1,3 @@
-# app/core/logging/config.py
 """
 Configuración centralizada de logging para MACTI API.
 Utiliza loguru con sinks a archivos JSON rotativos diarios y stderr para k8s.
@@ -7,35 +6,38 @@ En producción, montar un PersistentVolume en esta ruta.
 """
 
 import sys
+import json
 from pathlib import Path
-
+from app.core.environment import environment
 from loguru import logger
 
 # Ruta dentro del proyecto
-LOG_DIR = Path(__file__).parent / "logs"
-LOG_DIR.mkdir(parents=True, exist_ok=True)
+log_dir = Path(environment.LOGS_DIR).resolve()
+log_dir.mkdir(parents=True, exist_ok=True)
+print(f"--> [DEBUG LOGS] Escribiendo logs en: {log_dir}")
 
-# Formato JSON para parseo automático por Fluentd/Logstash
-JSON_FORMAT = (
-    "{{"
-    '"timestamp": "{time:YYYY-MM-DD HH:mm:ss.SSSSSS}",'
-    '"level": "{level}",'
-    '"logger": "{extra[logger_name]}",'
-    '"file": "{name}",'
-    '"line": {line},'
-    '"function": "{function}",'
-    '"message": "{message}",'
-    '"extra": {extra[payload]}'
-    "}}"
-)
-
-# Formato stderr más simple, no requiere logger_name
+# Formato stderr más simple
 STDERR_FORMAT = (
     "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
     "<level>{level: <8}</level> | "
     "<cyan>{extra[logger_name]}</cyan> | "
-    "<level>{message}</level>"
+    "<level>{message}</level>\n"
 )
+
+def json_formatter(record):
+    """Formatea el record como JSON válido para archivos .jsonl"""
+    log_entry = {
+        "timestamp": record["time"].strftime("%Y-%m-%d %H:%M:%S.%f"),
+        "level": record["level"].name,
+        "logger": record["extra"].get("logger_name", "unknown"),
+        "file": record["name"],
+        "line": record["line"],
+        "function": record["function"],
+        "message": record["message"],
+        "extra": record["extra"].get("payload", {})
+    }
+    record["extra"]["serialized"] = json.dumps(log_entry, ensure_ascii=False, default=str)
+    return "{extra[serialized]}\n"
 
 
 def setup_logging():
@@ -56,8 +58,8 @@ def setup_logging():
 
     # 2. Sink de errores: un archivo por día, JSON, 30 días de retención
     logger.add(
-        LOG_DIR / "error_{time:YYYY-MM-DD}.jsonl",
-        format=JSON_FORMAT,
+        log_dir / "error_{time:YYYY-MM-DD}.jsonl",
+        format=json_formatter,
         level="ERROR",
         rotation="00:00",
         retention="30 days",
@@ -70,8 +72,8 @@ def setup_logging():
 
     # 3. Sink de aplicación: info, seguridad, auditoría
     logger.add(
-        LOG_DIR / "app_{time:YYYY-MM-DD}.jsonl",
-        format=JSON_FORMAT,
+        log_dir / "app_{time:YYYY-MM-DD}.jsonl",
+        format=json_formatter,
         level="INFO",
         rotation="00:00",
         retention="30 days",
@@ -83,8 +85,8 @@ def setup_logging():
 
     # 4. Sink crítico separado para alertas
     logger.add(
-        LOG_DIR / "critical_{time:YYYY-MM-DD}.jsonl",
-        format=JSON_FORMAT,
+        log_dir / "critical_{time:YYYY-MM-DD}.jsonl",
+        format=json_formatter,
         level="CRITICAL",
         rotation="00:00",
         retention="90 days",
@@ -94,7 +96,7 @@ def setup_logging():
         diagnose=True,
     )
 
-    # Usar logger.bind para este primer mensaje
+    # Mensaje inicial de confirmación
     logger.bind(logger_name="macti.logging", payload={}).info(
         "Logging configurado correctamente"
     )

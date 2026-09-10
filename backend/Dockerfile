@@ -58,7 +58,14 @@ ENV PYTHONPATH="/app"
 # Evitar que Python guarde en buffer los logs (vital para ver logs en tiempo real en tu self-host)
 ENV PYTHONUNBUFFERED=1
 
+# Crear la carpeta externa de logs y darle permisos al usuario nonroot
+RUN mkdir -p /var/log/macti \
+    && chown -R nonroot:nonroot /var/log/macti
+
+
 # Cambiar al usuario seguro
+
+
 USER nonroot
 
 EXPOSE 8000
