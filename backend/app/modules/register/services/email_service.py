@@ -99,13 +99,6 @@ class EmailService:
                 service="SMTP",
                 endpoint="send_message",
                 error_message=error_msg,
-                extra={
-                    "to_email": to_email,
-                    "token": str(token),
-                    "error_type": type(e).__name__,
-                    "smtp_host": environment.SMTP_HOST,
-                    "smtp_port": environment.SMTP_PORT,
-                },
             )
             # Captura errores de autenticación, red o rechazo del servidor SMTP.
             return SendValidationEmailResult(
