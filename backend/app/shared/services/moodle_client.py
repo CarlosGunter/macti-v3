@@ -7,6 +7,7 @@
 
 import httpx
 
+from app.core.logging.macti_logger import log_service_error
 from app.shared.enums.institutes_enum import InstitutesEnum
 
 
@@ -33,6 +34,8 @@ async def make_moodle_request(
     Returns:
         Dict: Contiene 'success' (bool), 'data' (respuesta útil) y 'error_message'.
     """
+    ws_function = (params or {}).get("wsfunction", "unknown_function")
+    institute_val = institute.value if institute else "unknown"
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.request(
@@ -47,6 +50,19 @@ async def make_moodle_request(
             and isinstance(response_data, dict)
             and "exception" in response_data
         ):
+            #Agregamos log de error para seguimiento
+            error_msg = f"Excepción Moodle [{response_data.get('errorcode')}]: {response_data.get('message')}"
+            log_service_error(
+                logger_name="moodle_client",
+                service="Moodle",
+                endpoint=ws_function,
+                error_message=error_msg,
+                extra={
+                    "institute": institute_val,
+                    "error_code": response_data.get("errorcode"),
+                    "exception": response_data.get("exception"),
+                },
+            )
             return {
                 "success": False,
                 "data": None,
@@ -56,12 +72,17 @@ async def make_moodle_request(
         return {"success": True, "data": response_data, "error_message": None}
 
     except httpx.HTTPStatusError as e:
-        institute_str = f" ({institute.value})" if institute else ""
-        return {
-            "success": False,
-            "data": None,
-            "error_message": f"Error HTTP en Moodle{institute_str}: {e.response.status_code}",
-        }
+        error_msg = f"HTTP {e.response.status_code} desde Moodle"
+        log_service_error(
+            logger_name="moodle_client",
+            service="Moodle",
+            endpoint=ws_function,
+            error_message=error_msg,
+            status_code=e.response.status_code,
+            extra={"institute": institute_val},
+        )
+        return {"success": False, "data": None, "error_message": error_msg}
+
     except httpx.TimeoutException:
         institute_str = f" ({institute.value})" if institute else ""
         return {
@@ -77,9 +98,12 @@ async def make_moodle_request(
             "error_message": f"Error de conexión con Moodle{institute_str}: {str(e)}",
         }
     except Exception as e:
-        institute_str = f" ({institute.value})" if institute else ""
-        return {
-            "success": False,
-            "data": None,
-            "error_message": f"Error inesperado en Moodle{institute_str}: {str(e)}",
-        }
+        error_msg = f"Fallo de conexión o timeout con Moodle: {str(e)}"
+        log_service_error(
+            logger_name="moodle_client",
+            service="Moodle",
+            endpoint=ws_function,
+            error_message=error_msg,
+            extra={"institute": institute_val, "error_type": type(e).__name__},
+        )
+        return {"success": False, "data": None, "error_message": error_msg}
