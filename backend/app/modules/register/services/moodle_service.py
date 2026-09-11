@@ -4,6 +4,7 @@ Service for interacting with Moodle LMS API
 
 from dataclasses import dataclass, field
 
+from app.core.logging.macti_logger import log_info, log_service_error
 from app.shared.config.moodle_configs import MOODLE_CONFIG
 from app.shared.enums.institutes_enum import InstitutesEnum
 from app.shared.enums.role_moodle_enum import RoleEnum
@@ -53,10 +54,75 @@ class CreateGroupResult:
     error: str | None = None
 
 
+@dataclass
+class CreateCoursesResult:
+    course_ids: list[int] = field(default_factory=list)
+    error: str | None = None
+
+
 class MoodleService:
     """
     Clase estática que centraliza las operaciones de lectura y escritura en Moodle.
     """
+
+    @staticmethod
+    async def enroll_user(
+        user_id: int,
+        course_id: int,
+        institute: InstitutesEnum,
+        role_id: int,
+    ) -> EnrollUserResult:
+        """Matricula a un usuario en un curso específico de Moodle."""
+        endpoint = "enrol_manual_enrol_users"
+        config = MOODLE_CONFIG[institute]
+
+        params = {
+            "wstoken": config.moodle_token,
+            "wsfunction": endpoint,
+            "moodlewsrestformat": "json",
+        }
+        data = {
+            "enrolments[0][roleid]": role_id,
+            "enrolments[0][userid]": user_id,
+            "enrolments[0][courseid]": course_id,
+        }
+
+        result_response = await make_moodle_request(
+            url=config.moodle_url,
+            params=params,
+            data=data,
+            institute=institute,
+            check_moodle_errors=False,
+        )
+
+        if not result_response["success"]:
+            log_service_error(
+                logger_name="moodle_service",
+                service="Moodle",
+                endpoint=endpoint,
+                error_message=result_response["error_message"],
+            )
+            return EnrollUserResult(
+                enrolled=False,
+                error=result_response["error_message"],
+            )
+
+        data_payload = result_response.get("data")
+        if isinstance(data_payload, dict) and "exception" in data_payload:
+            error_moodle = f"[{data_payload.get('errorcode')}] {data_payload.get('message', 'Error desconocido')}"
+            log_service_error(
+                logger_name="moodle_service",
+                service="Moodle",
+                endpoint=endpoint,
+                error_message=error_moodle,
+            )
+            return EnrollUserResult(enrolled=False, error=error_moodle)
+
+        log_info(
+            logger_name="moodle_service",
+            message=f"Usuario {user_id} matriculado con éxito en curso {course_id}",
+        )
+        return EnrollUserResult(enrolled=True, error=None)
 
     @staticmethod
     async def create_user(
@@ -112,66 +178,6 @@ class MoodleService:
             )
         # Moodle retorna una lista de diccionarios con los IDs de los usuarios creados.
         return CreateUserResult(created=True, user_id=user_id)
-
-    @staticmethod
-    async def enroll_user(
-        user_id: int, course_id: int, institute: InstitutesEnum, role_id: int = 5
-    ) -> EnrollUserResult:
-        """
-        Matricula a un usuario existente en un curso específico de Moodle con un rol dinámico.
-        """
-        config = MOODLE_CONFIG[institute]
-        endpoint = config.moodle_url
-        params = {
-            "wstoken": config.moodle_token,
-            "wsfunction": "enrol_manual_enrol_users",
-            "moodlewsrestformat": "json",
-        }
-
-        data = {
-            "enrolments[0][roleid]": role_id,
-            "enrolments[0][userid]": user_id,
-            "enrolments[0][courseid]": course_id,
-            "enrolments[0][suspend]": 0,
-        }
-
-        result_response = await make_moodle_request(
-            url=endpoint,
-            params=params,
-            data=data,
-            institute=institute,
-            # Se desactiva la verificación automática para manejar excepciones manualmente abajo
-            check_moodle_errors=False,
-        )
-
-        if not result_response["success"]:
-            return EnrollUserResult(
-                enrolled=False,
-                error=f"Fallo de conexión/petición: {result_response['error_message']}",
-            )
-
-        result = result_response["data"]
-
-        # Manejo de Excepciones de Moodle:
-        # Moodle puede retornar un 200 OK pero con un cuerpo de 'exception'.
-        if isinstance(result, dict) and "exception" in result:
-            if result.get("message") == "error/Message was not sent.":
-                print(
-                    f"AVISO: Usuario {user_id} matriculado, pero Moodle no pudo enviar el email de aviso."
-                )
-                return EnrollUserResult(
-                    user_id=user_id,
-                    course_id=course_id,
-                    enrolled=True,
-                    warning="Matrícula exitosa con error de notificación SMTP en Moodle",
-                )
-
-            return EnrollUserResult(
-                enrolled=False,
-                error=f"Error de Moodle: {result.get('message', 'Desconocido')}",
-            )
-
-        return EnrollUserResult(user_id=user_id, course_id=course_id, enrolled=True)
 
     @staticmethod
     async def delete_user(user_id: int, institute: InstitutesEnum) -> DeleteUserResult:

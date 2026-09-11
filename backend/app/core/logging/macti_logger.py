@@ -112,4 +112,8 @@ def log_info(
     """
     Log informativo genérico.
     """
-    logger.bind(logger_name=logger_name, payload=extra or {}).info(message)
+    payload = {
+        "category": "info",
+        **(extra or {}),
+    }
+    logger.bind(logger_name=logger_name, payload=payload).info(message)

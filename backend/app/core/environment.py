@@ -2,7 +2,8 @@
 # Este módulo utiliza Pydantic Settings para cargar, tipar y validar todas las
 # credenciales y configuraciones sensibles alojadas en el archivo .env.
 
-from pydantic import field_validator
+# Agregamos la importación
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -45,6 +46,10 @@ class EnvironmentConfigs(BaseSettings):
     REDIS_DB: int = 0
     REDIS_PASSWORD: str = ""
     REDIS_CACHE_TTL: int = 300  # 5 minutos por defecto
+    LOGS_DIR: str = Field(
+        default="/var/log/macti",
+        description="Ruta en el servidor para almacenar los logs rotativos",
+    )
 
     @field_validator("APP_ENV")
     @classmethod

@@ -6,6 +6,8 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+# Agregamos la importación de logging para registrar errores y eventos importantes
+from app.core.logging.macti_logger import log_macti_error
 from app.modules.register.repositories.request_status_repository import (
     RequestStatusRepository,
 )
@@ -271,14 +273,27 @@ class RequestStatusController:
             HTTPException si hay error al enviar el correo
         """
         # Generar token de verificación
-        token = repository.create_or_update_verification_token(course_request.auth.id)
+        token_record = repository.create_or_update_verification_token(
+            course_request.auth.id
+        )
+        token_value = getattr(token_record, "token", token_record)
 
         # Enviar correo de validación con el token
         email_result = EmailService.send_validation_email(
             to_email=course_request.auth.email,
-            token=token,
+            token=token_value,
         )
         if not email_result.success:
+            log_macti_error(
+                logger_name="request_status_controller",
+                error_code="EMAIL_VALIDATION_FAILED",
+                message=f"Fallo al enviar correo de validación a {course_request.auth.email}",
+                extra={
+                    "auth_id": course_request.auth.id,
+                    "email": course_request.auth.email,
+                    "reason": email_result.error,
+                },
+            )
             raise HTTPException(
                 status_code=502,
                 detail={
@@ -286,10 +301,8 @@ class RequestStatusController:
                     "message": f"Error al enviar el correo de validación: {email_result.error}",
                 },
             )
-
         # Cambiar estado a APPROVED
         repository.update_request_status(course_request, RequestStatusEnum.APPROVED)
-
         return "Solicitud aprobada. Se ha enviado un correo de validación al usuario para confirmar su cuenta."
 
     @staticmethod

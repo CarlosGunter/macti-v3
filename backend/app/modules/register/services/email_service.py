@@ -9,6 +9,9 @@ from uuid import UUID
 
 from app.core.environment import environment
 
+# Agregamos la importación de logging para registrar errores y eventos importantes
+from app.core.logging.macti_logger import log_info, log_service_error
+
 
 @dataclass
 class SendValidationEmailResult:
@@ -77,6 +80,11 @@ class EmailService:
                 smtp.login(smtp_user, smtp_pass)
                 smtp.send_message(msg)
 
+            # Log informativo del envío exitoso (usando extra=)
+            log_info(
+                logger_name="email_service",
+                message=f"Correo de validación enviado exitosamente a {to_email}",
+            )
             return SendValidationEmailResult(
                 success=True,
                 message=f"Correo enviado exitosamente a {to_email}",
@@ -84,6 +92,15 @@ class EmailService:
             )
 
         except Exception as e:
+            # 1. Definir la variable primero
+            error_msg = f"Error en el servidor de correo: {str(e)}"
+            # Log de error del servicio externo SMTP (usando extra=)
+            log_service_error(
+                logger_name="email_service",
+                service="SMTP",
+                endpoint="send_message",
+                error_message=error_msg,
+            )
             # Captura errores de autenticación, red o rechazo del servidor SMTP.
             return SendValidationEmailResult(
                 success=False,
