@@ -43,7 +43,7 @@ class ListAccountRequestsRepository:
         course_id: int,
         institute: InstitutesEnum,
         status: RequestStatusEnum | None,
-    ) -> Select[tuple[int, str, str, str, RequestStatusEnum, AccountRoleEnum]]:
+    ) -> Select[tuple[int, int, str, str, str, RequestStatusEnum, AccountRoleEnum]]:
         """Construye la consulta para listar solicitudes de alumnos."""
         status_order = self._build_status_order()
         filters = self._build_filters(
@@ -55,6 +55,7 @@ class ListAccountRequestsRepository:
         return (
             select(
                 StudentCourseRequest.id.label("id"),
+                Auth.id.label("user_id"),
                 UserProfile.name.label("name"),
                 UserProfile.last_name.label("last_name"),
                 Auth.email.label("email"),
