@@ -2,16 +2,14 @@
 
 import Form from "next/form";
 import { useActionState } from "react";
+import Button from "@/shared/components/ui/Button";
 import { institutes } from "@/shared/config/institutes";
-import { Button } from "@/shared/shadcn/components/ui/button";
 import {
   Field,
   FieldContent,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
-  FieldLegend,
   FieldSeparator,
   FieldSet,
 } from "@/shared/shadcn/components/ui/field";
@@ -36,10 +34,12 @@ export default function AccountRequestTeacherForm() {
     <Form action={formAction} disabled={isPending}>
       <FieldGroup>
         <FieldSet>
-          <FieldLegend>Registro de Profesor</FieldLegend>
-          <FieldDescription>
-            El administrador se encargará de revisar y aprobar tu solicitud.
-          </FieldDescription>
+          <div className="leading-10">
+            <h2 className="text-2xl font-bold">Registro de Profesor</h2>
+            <p className="text-muted-foreground">
+              El administrador se encargará de revisar y aprobar tu solicitud.
+            </p>
+          </div>
 
           <FieldGroup>
             <Field>
@@ -132,7 +132,11 @@ export default function AccountRequestTeacherForm() {
               </FieldContent>
             )}
 
-            <Button type="submit" disabled={isPending}>
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="rounded-full! font-bold w-full py-3.5 px-4"
+            >
               {isPending ? "Enviando..." : "Solicitar"}
             </Button>
           </FieldGroup>
