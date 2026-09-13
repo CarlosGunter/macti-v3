@@ -19,7 +19,7 @@ export default function Home() {
           <div className="mx-auto flex flex-col sm:flex-row gap-4 pt-4">
             <Link
               href="/sobre-macti"
-              className="mx-auto inline-flex items-center justify-center font-semibold px-8 py-4 rounded-xl bg-primary border-2 text-primary-foreground border-primary-foreground hover:text-accent hover:border-border transition text-base shadow-xl hover:-translate-y-0.5 duration-200"
+              className="mx-auto inline-flex items-center justify-center font-bold px-8 py-4 rounded-xl bg-primary border-2 text-primary-foreground border-primary-foreground hover:text-accent hover:border-border transition text-xl shadow-xl hover:-translate-y-0.5 duration-200"
             >
               ¿Qué es MACTI?
             </Link>
