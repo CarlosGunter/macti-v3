@@ -32,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="scheme-light-dark">
+    <html lang="es" className="scheme-light">
       <body
         className={`${montserrat.variable} ${hindMadurai.variable} ${lora.variable} antialiased flex flex-col gap-6 min-h-screen justify-between items-center bg-background text-foreground selection:bg-accent selection:text-accent-foreground`}
       >
