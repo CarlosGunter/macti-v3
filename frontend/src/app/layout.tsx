@@ -1,23 +1,23 @@
 import type { Metadata } from "next";
-import { Hind_Madurai, Lora, Montserrat } from "next/font/google";
+import { Bai_Jamjuree, Inter, Rajdhani } from "next/font/google";
 import "./globals.css";
 import { Footer } from "@/shared/components/common/Footer";
 
-const montserrat = Montserrat({
-  weight: ["300", "400", "600", "700"],
-  variable: "--font-montserrat",
+const baiJamjuree = Bai_Jamjuree({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-bai-jamjuree",
 });
 
-const hindMadurai = Hind_Madurai({
-  weight: ["300", "400", "600", "700"],
-  variable: "--font-hind-madurai",
+const rajdhani = Rajdhani({
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-rajdhani",
 });
 
-const lora = Lora({
-  variable: "--font-lora",
+const inter = Inter({
   subsets: ["latin"],
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -32,9 +32,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="scheme-light-dark">
+    <html
+      lang="es"
+      className={`${baiJamjuree.variable} ${rajdhani.variable} ${inter.variable} scheme-light`}
+    >
       <body
-        className={`${montserrat.variable} ${hindMadurai.variable} ${lora.variable} antialiased flex flex-col gap-6 min-h-screen justify-between items-center bg-background text-foreground selection:bg-accent selection:text-accent-foreground`}
+        className={`antialiased flex flex-col gap-6 min-h-screen justify-between items-center bg-background text-foreground selection:bg-accent selection:text-accent-foreground`}
       >
         {children}
         <Footer />

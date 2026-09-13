@@ -4,7 +4,7 @@ import Form from "next/form";
 import { useActionState, useState } from "react";
 import VisibilityIcon from "@/assets/svg/visibility";
 import VisibilityOffIcon from "@/assets/svg/visibilityOff";
-import { Button } from "@/shared/shadcn/components/ui/button";
+import Button from "@/shared/components/ui/Button";
 import {
   Field,
   FieldContent,
@@ -12,7 +12,6 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
-  FieldLegend,
   FieldSet,
 } from "@/shared/shadcn/components/ui/field";
 import { Input } from "@/shared/shadcn/components/ui/input";
@@ -39,19 +38,21 @@ export default function CreateAccount({ userData, token }: CreateAccountProps) {
     <Form action={formAction} disabled={isPending}>
       <FieldGroup>
         <FieldSet>
-          <FieldLegend>
-            Crear Cuenta - {userData.name} {userData.last_name}
-          </FieldLegend>
-          <FieldDescription>
-            Bienvenido, <span className="font-semibold">{userData.email}</span>. Tu
-            solicitud de cuenta ha sido aprobada para MACTI |{" "}
-            {userData.institute.charAt(0).toUpperCase() + userData.institute.slice(1)}.
-          </FieldDescription>
+          <div className="grid gap-2">
+            <h2 className="text-2xl font-bold">
+              Crear Cuenta - {userData.name} {userData.last_name}
+            </h2>
+            <p className="text-muted-foreground leading-normal">
+              Bienvenido, <span className="font-semibold">{userData.email}</span>. Tu
+              solicitud de cuenta ha sido aprobada para MACTI |{" "}
+              {userData.institute.charAt(0).toUpperCase() + userData.institute.slice(1)}.
+            </p>
+          </div>
 
           <input type="hidden" name="user_id" defaultValue={userData.id} />
           <input type="hidden" name="token" defaultValue={token} />
 
-          <FieldGroup>
+          <FieldGroup className="gap-8">
             <Field>
               <FieldLabel>Nueva Contraseña</FieldLabel>
               <FieldContent>

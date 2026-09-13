@@ -23,9 +23,6 @@ export default function CourseCard({
 
       <div className="p-6 flex flex-col grow justify-between space-y-6 group-hover:bg-[#00d9da]/20 transition-colors duration-200">
         <div className="space-y-1.5">
-          <p className="text-xs sm:text-sm text-slate-600 font-medium tracking-wide">
-            Nombre de la Facultad
-          </p>
           <h2 className="text-lg sm:text-xl font-extrabold text-[#0b2027] tracking-tight group-hover:text-black">
             {title}
           </h2>

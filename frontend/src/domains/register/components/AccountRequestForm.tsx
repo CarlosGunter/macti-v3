@@ -3,8 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import Form from "next/form";
 import { useActionState, useState } from "react";
+import Button from "@/shared/components/ui/Button";
 import { institutes } from "@/shared/config/institutes";
-import { Button } from "@/shared/shadcn/components/ui/button";
 import {
   Field,
   FieldContent,
@@ -12,7 +12,6 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
-  FieldLegend,
   FieldSeparator,
   FieldSet,
 } from "@/shared/shadcn/components/ui/field";
@@ -27,6 +26,13 @@ import {
 import { accountRequestAction } from "../actions/accountRequestAction";
 import { fetchCoursesClient } from "../services/fetchCoursesClient";
 
+/**
+ * Formulario de solicitud de cuenta para estudiantes.
+ * Permite seleccionar el instituto, el curso deseado e ingresar datos personales.
+ *
+ * @param props - Propiedades del componente con el instituto predeterminado.
+ * @returns Componente de formulario de solicitud de cuenta.
+ */
 export default function AccountRequestForm({ institute }: { institute: string }) {
   const [state, formAction, isPending] = useActionState(accountRequestAction, null);
 
@@ -52,14 +58,16 @@ export default function AccountRequestForm({ institute }: { institute: string })
     <Form action={formAction} disabled={isPending} className="w-full">
       <FieldGroup>
         <FieldSet>
-          <FieldLegend>Solicitud de Cuenta de Estudiante</FieldLegend>
-          <FieldDescription>
-            Cada instituto tiene su propio proceso de solicitud.
-          </FieldDescription>
+          <div className="leading-10">
+            <h2 className="text-2xl font-bold">Registrate en una dependencia</h2>
+            <p className="text-muted-foreground">
+              El administrador de la dependencia revisará y aprobará tu solicitud.
+            </p>
+          </div>
 
           <FieldGroup>
             <Field>
-              <FieldLabel>Escuela/Facultad/Instituto</FieldLabel>
+              <FieldLabel>Escuela | Facultad | Instituto</FieldLabel>
               <Select
                 name="institute"
                 value={selectedInstitute}
@@ -177,13 +185,17 @@ export default function AccountRequestForm({ institute }: { institute: string })
             )}
 
             {state?.success && (
-              <FieldContent className="text-green-600 text-center text-sm">
+              <FieldContent className="text-green-600 text-center font-semibold">
                 Solicitud enviada exitosamente.
               </FieldContent>
             )}
 
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Enviando..." : "Solicitar"}
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="rounded-full! font-bold w-full py-3.5 px-4"
+            >
+              {isPending ? "Enviando..." : "Solicitar Cuenta"}
             </Button>
           </FieldGroup>
         </FieldSet>

@@ -10,7 +10,7 @@ export default async function Layout({ children, params }: LayoutProps) {
   const { institute } = await params;
   return (
     <RuntimeRecoveryBoundary>
-      <div className="w-full flex flex-col items-center">
+      <div className="w-full flex flex-col items-center gap-6">
         <Header institute={institute} />
         <div className="w-11/12 p-2 sm:p-0">{children}</div>
       </div>

@@ -23,23 +23,23 @@ export default function ProfileTabs({ institute, activeTab }: ProfileTabsProps) 
   return (
     <div className="grid gap-4">
       {/* Horizontal Menu */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700">
+      <div className="flex border-b border-gray-400">
         <Link
           href={`?tab=${ProfileTabsMap.EnrolledCourses}`}
-          className={`px-6 py-3 font-medium text-sm transition-colors ${
+          className={`px-6 py-3 font-semibold text-sm transition-colors ${
             activeTab === ProfileTabsMap.EnrolledCourses
-              ? "border-b-2 border-black text-black dark:border-white dark:text-white"
-              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              ? "border-b-2 border-accent text-black"
+              : "text-gray-500 hover:text-foreground hover:border-b hover:border-gray-500"
           }`}
         >
           Mis cursos
         </Link>
         <Link
           href={`?tab=${ProfileTabsMap.RequestsCourses}`}
-          className={`px-6 py-3 font-medium text-sm transition-colors ${
+          className={`px-6 py-3 font-semibold text-sm transition-colors ${
             activeTab === ProfileTabsMap.RequestsCourses
-              ? "border-b-2 border-black text-black dark:border-white dark:text-white"
-              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              ? "border-b-2 border-accent text-black"
+              : "text-gray-500 hover:text-foreground hover:border-b hover:border-gray-500"
           }`}
         >
           Solicitudes de cursos
@@ -49,20 +49,21 @@ export default function ProfileTabs({ institute, activeTab }: ProfileTabsProps) 
       {/* Tab Content */}
       <div className="mt-4">
         {activeTab === ProfileTabsMap.EnrolledCourses && (
-          <div className="grid gap-4">
+          <div className="grid gap-4 max-w-6xl mx-auto">
             <ListEnrolledCourses institute={institute} />
-            <div className="flex flex-col gap-3 rounded-2xl border border-border/70 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between py-6 bg-card text-card-foreground">
-              <div className="grid gap-1">
-                <p className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <BookPlus className="size-4 text-primary" aria-hidden="true" />
-                  Solicitar un curso nuevo
-                </p>
-                <p className="max-w-prose text-sm text-muted-foreground">
-                  Abre una solicitud de un curso nuevo dentro de tu instituto.
-                </p>
+            <div className="md:mx-6">
+              <div className="flex flex-col gap-3 rounded-2xl shadow-sm sm:flex-row sm:items-center sm:justify-between px-6 py-4 bg-card text-card-foreground w-full ring ring-ring/10">
+                <div className="grid gap-1">
+                  <p className="flex items-center gap-2 text-foreground text-lg font-extrabold">
+                    <BookPlus className="size-5" aria-hidden="true" />
+                    Solicitar un curso nuevo
+                  </p>
+                  <p className="max-w-prose">
+                    Abre una solicitud de un curso nuevo dentro de tu instituto.
+                  </p>
+                </div>
+                <CreateCourseRequestAutenticatedDialog institute={institute} />
               </div>
-
-              <CreateCourseRequestAutenticatedDialog institute={institute} />
             </div>
           </div>
         )}

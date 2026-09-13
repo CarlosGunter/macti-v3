@@ -3,7 +3,7 @@ import type * as React from "react";
 /**
  * Componente SVG generado a partir de __Quetzalcoatl_MACTI.svg
  */
-const QuetzalcoatlMACTI: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+export const Quetzalcoatl: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg
     id="Capa_1"
     xmlns="http://www.w3.org/2000/svg"
@@ -7491,5 +7491,3 @@ const QuetzalcoatlMACTI: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     />
   </svg>
 );
-
-export default QuetzalcoatlMACTI;

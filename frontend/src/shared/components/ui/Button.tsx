@@ -7,7 +7,7 @@ interface ButtonProps {
   disabled?: boolean;
   isLoading?: boolean;
   className?: string;
-  variant?: "recommended" | "danger" | "default";
+  variant?: "recommended" | "danger" | "default" | "secondary";
 }
 
 const variants = {
@@ -15,6 +15,8 @@ const variants = {
   danger: "bg-red-700 text-white hover:bg-red-600",
   default:
     "bg-secondary text-secondary-foreground hover:bg-accent hover:text-accent-foreground",
+  secondary:
+    "bg-primary text-primary-foreground border border-primary-foreground hover:bg-accent hover:text-accent-foreground hover:border-border",
 };
 
 export default function Button({
@@ -31,7 +33,7 @@ export default function Button({
       onClick={onClick}
       type={type}
       disabled={disabled || isLoading}
-      className={`inline-flex items-center gap-2 duration-200 px-4 py-2 rounded-xl shadow-lg transition-all ${variants[variant]} ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${isLoading && "cursor-progress"} ${className}`}
+      className={`${className} inline-flex items-center justify-center gap-2 duration-200 px-4 py-2 shadow-lg rounded-xl transition-all font-semibold ${variants[variant]} ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${isLoading && "cursor-progress"}`}
     >
       {isLoading && <Spinner />}
       {children}

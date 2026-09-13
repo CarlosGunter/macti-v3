@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Button from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/shadcn/components/ui/badge";
-import { Button } from "@/shared/shadcn/components/ui/button";
+import { Button as CnButton } from "@/shared/shadcn/components/ui/button";
 import {
   Field,
   FieldContent,
@@ -48,7 +49,12 @@ export default function GroupInput({ defaultValue, error }: GroupInputProps) {
               }
             }}
           />
-          <Button type="button" onClick={handleAddGroup} disabled={!groupName.trim()}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleAddGroup}
+            disabled={!groupName.trim()}
+          >
             Agregar
           </Button>
         </div>
@@ -58,7 +64,7 @@ export default function GroupInput({ defaultValue, error }: GroupInputProps) {
             <Badge key={group} variant="secondary" className="flex items-center gap-1">
               <input type="hidden" name="groups" value={group} />
               <div className="ml-1.5">{group}</div>
-              <Button
+              <CnButton
                 type="button"
                 size="sm"
                 variant="ghost"
@@ -67,7 +73,7 @@ export default function GroupInput({ defaultValue, error }: GroupInputProps) {
                 aria-label={`Eliminar ${group}`}
               >
                 ×
-              </Button>
+              </CnButton>
             </Badge>
           ))}
         </div>

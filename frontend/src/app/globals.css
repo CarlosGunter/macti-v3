@@ -17,16 +17,21 @@
   h5,
   h6 {
     font-family: var(--font-headers), Helvetica, Arial, sans-serif;
+    @apply font-extrabold;
   }
 }
 
 @theme inline {
   /* self */
-  --font-headers: var(--font-montserrat);
-  --font-text: var(--font-hind-madurai);
+  --font-headers: var(--font-bai-jamjuree);
+  --font-text: var(--font-rajdhani);
 
   --color-accent-invert: var(--accent-invert);
   --color-accent-invert-foreground: var(--accent-invert-foreground);
+  --color-background-form: var(--background-form);
+  --color-background-form-foreground: var(--background-form-foreground);
+  --color-background-avatar: var(--background-avatar);
+  --color-foreground-avatar: var(--foreground-avatar);
 
   /* shadcn */
   --radius-sm: calc(var(--radius) - 4px);
@@ -73,6 +78,10 @@
   /* self */
   --accent-invert: #fff;
   --accent-invert-foreground: #d9a500;
+  --background-form: light-dark(#f1f7eb, #0b2027);
+  --background-form-foreground: light-dark(#0b2027, #e3f8cf);
+  --background-avatar: light-dark(#1ca3a1, #0b2027);
+  --foreground-avatar: light-dark(#fff, #1ca3a1);
 
   /* shadcn */
   --radius: 0.625rem;
@@ -80,7 +89,7 @@
   --foreground: light-dark(#0b2027, #e3f8cf);
   --card: light-dark(#eff9e680, #0b2027);
   --card-foreground: light-dark(#0b2027, #00d9da);
-  --popover: light-dark(#e3f8cf, #0b2027);
+  --popover: light-dark(#fff, #0b2027);
   --popover-foreground: light-dark(#0b2027, #e3f8cf);
   --primary: light-dark(#fff, #00d9da);
   --primary-foreground: light-dark(#013b75, #e3f8cf);
@@ -92,8 +101,8 @@
   --accent-foreground: light-dark(#fff, oklch(0.985 0 0));
   --destructive: light-dark(oklch(0.577 0.245 27.325), oklch(0.704 0.191 22.216));
   --border: light-dark(#d9a500, oklch(1 0 0 / 10%));
-  --input: light-dark(#1a353e, oklch(1 0 0 / 15%));
-  --ring: light-dark(#1aafa7, #00d9da);
+  --input: light-dark(var(--color-gray-300), oklch(1 0 0 / 15%));
+  --ring: light-dark(#013b75, #00d9da);
   --chart-1: light-dark(oklch(0.646 0.222 41.116), oklch(0.488 0.243 264.376));
   --chart-2: light-dark(oklch(0.6 0.118 184.704), oklch(0.696 0.17 162.48));
   --chart-3: light-dark(oklch(0.398 0.07 227.392), oklch(0.769 0.188 70.08));
