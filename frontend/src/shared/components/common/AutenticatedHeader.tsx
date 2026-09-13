@@ -43,21 +43,19 @@ export function AutenticatedHeader({ institute, session }: AutenticatedHeaderPro
           className="focus:outline-none rounded-full transition-all hover:scale-105"
         >
           <Avatar size="lg">
-            <AvatarFallback className="bg-primary text-primary-foreground text-lg font-semibold">
+            <AvatarFallback className="bg-background-avatar text-foreground-avatar text-lg font-semibold">
               {initials}
             </AvatarFallback>
           </Avatar>
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="end" className="w-48 border-0 shadow-lg">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">
-              {userInfo?.name || "Usuario"}
-            </p>
+            <p className="font-medium leading-none">{userInfo?.name || "Usuario"}</p>
             {userInfo?.email && (
-              <p className="text-xs leading-none text-muted-foreground">
+              <p className="text-xs font-medium leading-none text-muted-foreground">
                 {userInfo.email}
               </p>
             )}
@@ -70,7 +68,6 @@ export function AutenticatedHeader({ institute, session }: AutenticatedHeaderPro
             <span>Perfil</span>
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => signOutFederatedSession({ institute })}
           className="cursor-pointer"
