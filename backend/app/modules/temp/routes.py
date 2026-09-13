@@ -10,6 +10,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from loguru import logger
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.cache.redis_client import redis_client
@@ -24,6 +25,8 @@ from app.shared.dependecies.auth_scopes_base import AuthScopes
 from app.shared.enums.institutes_enum import InstitutesEnum
 from app.shared.enums.role_enum import AccountRoleEnum
 from app.shared.models.auth_model import Auth
+from app.shared.models.student_courses_model import StudentCourseRequest
+from app.shared.models.teacher_courses_model import TeacherCourseRequest
 from app.shared.services.moodle_service import MoodleService as SharedMoodleService
 
 router = APIRouter(prefix="/temp", tags=["temp"])
@@ -52,14 +55,26 @@ async def bearer_test(current_user=Depends(get_current_user)):
     summary="Eliminar todos los datos relacionados con un usuario específico",
 )
 async def clear_user_data(
-    user_id: int = Query(
-        ...,
-        description="ID del usuario (Auth) cuyos datos serán eliminados de la BD y servicios externos",
+    user_id: int | None = Query(
+        None,
+        description="ID del usuario (Auth.id) o ID de solicitud (StudentCourseRequest.id / TeacherCourseRequest.id)",
+    ),
+    email: str | None = Query(
+        None,
+        description="Email del usuario cuyos datos serán eliminados de la BD y servicios externos",
+    ),
+    institute: InstitutesEnum | None = Query(
+        None,
+        description="Instituto al que pertenece el usuario (opcional si se especifica email único o user_id)",
     ),
     db: Session = Depends(get_db),
 ):
     """
     Realiza una limpieza total de un usuario para permitir re-pruebas de registro.
+
+    Permite identificar al usuario por su 'email' (con 'institute' opcional) o por su 'user_id'.
+    Si se proporciona 'user_id' y no coincide directamente con un Auth.id, buscará automáticamente
+    si corresponde al ID de una solicitud de alumno (StudentCourseRequest) o docente (TeacherCourseRequest).
 
     Operaciones:
     1. Localiza el registro en la base de datos local (Auth) con sus identificadores externos (JIDs).
@@ -68,19 +83,74 @@ async def clear_user_data(
     4. Elimina físicamente el registro en la tabla Auth (la eliminación en cascada remueve
        perfil, tokens, solicitudes y JIDs).
     """
-    # 1. Validación de existencia y obtención de contexto
-    user_auth = (
-        db.query(Auth)
-        .options(joinedload(Auth.jids))
-        .filter(Auth.id == user_id)
-        .one_or_none()
-    )
-    if not user_auth:
+    if not user_id and not email:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Usuario con ID {user_id} no encontrado en la base de datos local.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Debe proporcionar al menos 'user_id' o 'email' para identificar al usuario a eliminar.",
         )
 
+    # 1. Validación de existencia y obtención de contexto
+    user_auth = None
+
+    # Búsqueda por email
+    if email:
+        email_clean = email.strip().lower()
+        query = (
+            db.query(Auth)
+            .options(joinedload(Auth.jids))
+            .filter(func.lower(Auth.email) == email_clean)
+        )
+        if institute:
+            query = query.filter(Auth.institute == institute)
+        user_auth = query.first()
+
+    # Búsqueda por user_id si no se encontró por email o solo se pasó user_id
+    if not user_auth and user_id is not None:
+        user_auth = (
+            db.query(Auth)
+            .options(joinedload(Auth.jids))
+            .filter(Auth.id == user_id)
+            .one_or_none()
+        )
+
+        # Fallback 1: Si no se encuentra en Auth, buscar si user_id es ID de una solicitud de alumno
+        if not user_auth:
+            student_req = (
+                db.query(StudentCourseRequest)
+                .filter(StudentCourseRequest.id == user_id)
+                .one_or_none()
+            )
+            if student_req:
+                user_auth = (
+                    db.query(Auth)
+                    .options(joinedload(Auth.jids))
+                    .filter(Auth.id == student_req.auth_id)
+                    .one_or_none()
+                )
+
+        # Fallback 2: Buscar si user_id es ID de una solicitud de docente
+        if not user_auth:
+            teacher_req = (
+                db.query(TeacherCourseRequest)
+                .filter(TeacherCourseRequest.id == user_id)
+                .one_or_none()
+            )
+            if teacher_req:
+                user_auth = (
+                    db.query(Auth)
+                    .options(joinedload(Auth.jids))
+                    .filter(Auth.id == teacher_req.auth_id)
+                    .one_or_none()
+                )
+
+    if not user_auth:
+        identifier = f"email '{email}'" if email else f"ID {user_id}"
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Usuario con {identifier} no encontrado en la base de datos local.",
+        )
+
+    actual_user_id = user_auth.id
     institute = user_auth.institute
     email = user_auth.email
 
@@ -164,7 +234,7 @@ async def clear_user_data(
         )
 
     return {
-        "message": f"Usuario {user_id} ({email}) eliminado exitosamente de MACTI, Keycloak y Moodle."
+        "message": f"Usuario {actual_user_id} ({email}) eliminado exitosamente de MACTI, Keycloak y Moodle."
     }
 
 
