@@ -4,7 +4,7 @@ export default function RegistroLayout({ children }: { children: React.ReactNode
   return (
     <>
       <HeaderBasic />
-      <main className="flex flex-col items-center max-w-6xl mx-auto p-2">{children}</main>
+      <main className="w-11/12 p-2">{children}</main>
     </>
   );
 }
