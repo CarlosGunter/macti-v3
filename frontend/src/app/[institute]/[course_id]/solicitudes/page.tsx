@@ -25,7 +25,7 @@ export default async function SolicitudesPage({ params }: SolicitudesPageProps) 
     )?.[0] ?? null;
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-6 w-full max-w-7xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold">{currentCourse?.fullname ?? "Sin nombre"}</h1>
         <h2 className="text-xl">Solicitudes</h2>
