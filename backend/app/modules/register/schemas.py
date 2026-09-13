@@ -92,11 +92,11 @@ class AccountsResponse(BaseModel):
     """
     Esquema para la visualización administrativa de solicitudes.
 
-    Mapea directamente los campos de la tabla UserAccounts para ser consumidos
-    por tablas o listas en el panel de administración.
+    Expone tanto el ID de la solicitud de curso (request_id) como el ID del usuario en MCT_auth.
     """
 
-    id: int
+    id: int = Field(description="ID de la solicitud de curso del alumno (request_id)")
+    user_id: int = Field(description="ID de usuario en MCT_auth (Auth.id)")
     name: str
     last_name: str
     email: EmailStr
