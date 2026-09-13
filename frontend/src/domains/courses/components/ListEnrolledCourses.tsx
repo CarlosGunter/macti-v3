@@ -35,7 +35,7 @@ export default function ListEnrolledCourses({ institute }: ListEnrolledCoursesPr
   }
 
   return (
-    <article className="grid grid-cols-3 gap-4">
+    <article className="mx-auto max-w-6xl md:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8  w-full">
       {enrolledCourses && enrolledCourses.length > 0 ? (
         enrolledCourses.map((course) => (
           <CourseCard

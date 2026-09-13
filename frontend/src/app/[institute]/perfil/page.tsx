@@ -21,7 +21,7 @@ export default async function PerfilPage({ params, searchParams }: PerfilPagePro
   const { tab } = await searchParams;
 
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-6">
       <ProfileCard institute={institute} />
 
       <ProfileTabs institute={institute} activeTab={tab} />

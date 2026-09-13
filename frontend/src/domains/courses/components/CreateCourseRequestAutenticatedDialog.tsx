@@ -2,6 +2,7 @@
 
 import Form from "next/form";
 import { useActionState, useEffect, useState } from "react";
+import ButtonLocal from "@/shared/components/ui/Button";
 import type { InstitutesType } from "@/shared/config/institutes";
 import { Badge } from "@/shared/shadcn/components/ui/badge";
 import { Button } from "@/shared/shadcn/components/ui/button";
@@ -74,9 +75,13 @@ function CourseGroupsInput({
               }
             }}
           />
-          <Button type="button" onClick={handleAddGroup} disabled={!groupName.trim()}>
+          <ButtonLocal
+            type="button"
+            onClick={handleAddGroup}
+            disabled={!groupName.trim()}
+          >
             Agregar
-          </Button>
+          </ButtonLocal>
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
@@ -122,10 +127,10 @@ export default function CreateCourseRequestAutenticatedDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full sm:w-auto">Solicitar nuevo curso</Button>
+        <ButtonLocal className="w-full sm:w-auto">Solicitar nuevo curso</ButtonLocal>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-180">
+      <DialogContent className="sm:max-w-180 bg-primary text-primary-foreground">
         <DialogHeader>
           <DialogTitle>Solicitud de nuevo curso</DialogTitle>
           <DialogDescription>
@@ -137,10 +142,6 @@ export default function CreateCourseRequestAutenticatedDialog({
         <Form action={formAction} disabled={isPending} className="grid gap-4">
           <FieldGroup>
             <FieldSet>
-              <FieldDescription>
-                Completa el nombre del curso y registra los grupos iniciales.
-              </FieldDescription>
-
               <FieldGroup>
                 <Field>
                   <FieldLabel>Nombre completo del curso</FieldLabel>
@@ -153,12 +154,10 @@ export default function CreateCourseRequestAutenticatedDialog({
                     />
                   </FieldContent>
                   <FieldDescription>
-                    Usa el nombre oficial con el que se mostrará el curso.
+                    Usa el nombre con el que se mostrará el curso.
                   </FieldDescription>
                   <FieldError>{state?.errors.course_full_name?.errors[0]}</FieldError>
                 </Field>
-
-                <FieldSeparator />
 
                 <CourseGroupsInput
                   defaultValue={state?.data?.groups as string[]}
@@ -182,13 +181,13 @@ export default function CreateCourseRequestAutenticatedDialog({
 
           <DialogFooter className="pt-2">
             <DialogClose asChild>
-              <Button type="button" variant="outline" disabled={isPending}>
+              <ButtonLocal type="button" variant="secondary" disabled={isPending}>
                 Cancelar
-              </Button>
+              </ButtonLocal>
             </DialogClose>
-            <Button type="submit" disabled={isPending}>
+            <ButtonLocal type="submit" disabled={isPending}>
               {isPending ? "Enviando..." : "Solicitar curso"}
-            </Button>
+            </ButtonLocal>
           </DialogFooter>
         </Form>
       </DialogContent>
