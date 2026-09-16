@@ -43,6 +43,18 @@ class EmailService:
             Un dataclass con el estatus del envío.
         """
 
+        email_domain = to_email.rsplit("@", 1)[-1].lower()
+        if "example" in email_domain:
+            log_info(
+                logger_name="email_service",
+                message=f"Envío de correo omitido para dirección de prueba {to_email}",
+            )
+            return SendValidationEmailResult(
+                success=True,
+                message=f"Envío omitido para dirección de prueba {to_email}",
+                token=token,
+            )
+
         frontend_url = environment.FRONTEND_URL
         confirm_link = f"{frontend_url}/registro/confirmacion?token={token}"
 
