@@ -63,8 +63,6 @@ export async function createCourseRequestAutenticatedAction(
     headers: await getCookieHeaders(),
   });
 
-  console.log({ courseRequestResult });
-
   if (!courseRequestResult.success) {
     return {
       success: false,
