@@ -50,7 +50,7 @@ export default function ListCourseRequestsTeachers({
   }
 
   return (
-    <section className="grid gap-4">
+    <section className="grid gap-4 mx-auto w-full max-w-7xl">
       <CourseFilters statusFilter={statusFilter} setStatusFilter={setStatusFilter} />
 
       {courseRequests?.map((request) => (

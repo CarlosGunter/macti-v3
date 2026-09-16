@@ -31,7 +31,7 @@ interface CourseFiltersProps {
  */
 export function CourseFilters({ statusFilter, setStatusFilter }: CourseFiltersProps) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-2 max-w-7xl w-full">
       <Label htmlFor="status-filter" className="text-sm font-medium">
         Filtrar por estado:
       </Label>
