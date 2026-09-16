@@ -28,7 +28,7 @@ export default async function SolicitudesPage({ params }: SolicitudesPageProps) 
     <div className="grid gap-6 w-full max-w-7xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold">{currentCourse?.fullname ?? "Sin nombre"}</h1>
-        <h2 className="text-xl">Solicitudes</h2>
+        <h2 className="text-xl">Alumnos que han solicitado unirse</h2>
       </div>
 
       <ListCourseRequestsStudent course_id={course_id} institute={institute} />
