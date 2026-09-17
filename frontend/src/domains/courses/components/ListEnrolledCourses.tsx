@@ -3,15 +3,17 @@
 import { useQuery } from "@tanstack/react-query";
 import Banner from "@/shared/components/feedback/Banner";
 import { Anchor } from "@/shared/components/ui/Anchor";
+import { type InstitutesType, institutes } from "@/shared/config/institutes";
 import { privilegeRoles } from "@/shared/config/rolesMap";
 import { fetchEnrolledCourses } from "../services/fetchEnrolledCourses";
 import CourseCard from "./ui/CourseCard";
 
 interface ListEnrolledCoursesProps {
-  institute: string;
+  institute: InstitutesType;
 }
 
 export default function ListEnrolledCourses({ institute }: ListEnrolledCoursesProps) {
+  const currentInstitute = institutes[institute];
   const {
     data: enrolledCourses,
     isLoading: isEnrolledCoursesLoading,
@@ -45,8 +47,20 @@ export default function ListEnrolledCourses({ institute }: ListEnrolledCoursesPr
             description={course.summary}
           >
             {course.role.some((r) => privilegeRoles.high.includes(r)) && (
-              <Anchor href={`./${course.id}/solicitudes`}>Solicitudes</Anchor>
+              <Anchor variant="secondary" href={`./${course.id}/solicitudes`}>
+                Solicitudes
+              </Anchor>
             )}
+            <Anchor
+              href={`${currentInstitute.moodle}/course/view.php?id=${course.id}`}
+              variant="bordered"
+              external
+            >
+              Moodle
+            </Anchor>
+            <Anchor href={currentInstitute.jupyter} variant="bordered" external>
+              Jupyter
+            </Anchor>
           </CourseCard>
         ))
       ) : (

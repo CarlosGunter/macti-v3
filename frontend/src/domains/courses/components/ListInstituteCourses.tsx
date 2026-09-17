@@ -47,7 +47,7 @@ export default async function ListInstituteCourses({
           >
             Moodle
           </Anchor>
-          <Anchor href={`${currentInstitute.jupyter}/hub/`} variant="bordered" external>
+          <Anchor href={currentInstitute.jupyter} variant="bordered" external>
             Jupyter
           </Anchor>
         </CourseCard>

@@ -41,12 +41,13 @@ export default function StudentCourseRequestCard({
           </div>
         </header>
 
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent-invert-foreground w-fit">
+        <Link
+          href={`mailto:${request.email}`}
+          className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-accent-invert-foreground w-fit truncate transition-colors"
+        >
           <Mail className="h-4 w-4" />
-          <Link href={`mailto:${request.email}`} className="truncate transition-colors">
-            {request.email}
-          </Link>
-        </div>
+          {request.email}
+        </Link>
 
         <CourseRequestStatusActions
           institute={institute}
