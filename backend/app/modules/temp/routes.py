@@ -51,42 +51,64 @@ async def bearer_test(current_user=Depends(get_current_user)):
 
 
 @router.delete(
+    "/clear-users",
+    summary="Eliminar datos de un usuario en base de datos local y plataformas seleccionadas",
+)
+@router.delete(
     "/clear-user",
-    summary="Eliminar todos los datos relacionados con un usuario específico",
+    summary="Eliminar datos de un usuario en base de datos local y plataformas seleccionadas (alias)",
 )
 async def clear_user_data(
+    *,
     user_id: int | None = Query(
         None,
         description="ID del usuario (Auth.id) o ID de solicitud (StudentCourseRequest.id / TeacherCourseRequest.id)",
     ),
     email: str | None = Query(
         None,
-        description="Email del usuario cuyos datos serán eliminados de la BD y servicios externos",
+        description="Email del usuario cuyos datos serán eliminados de la BD y/o servicios externos",
     ),
     institute: InstitutesEnum | None = Query(
         None,
         description="Instituto al que pertenece el usuario (opcional si se especifica email único o user_id)",
     ),
+    delete_keycloak: bool = Query(
+        default=True,
+        description="Indica si se debe eliminar la cuenta del usuario en Keycloak (IAM)",
+    ),
+    delete_moodle: bool = Query(
+        default=True,
+        description="Indica si se debe eliminar la cuenta del usuario en Moodle (LMS)",
+    ),
+    delete_local: bool = Query(
+        default=True,
+        description="Indica si se debe eliminar el registro en la base de datos local (Auth y cascada)",
+    ),
     db: Session = Depends(get_db),
 ):
     """
-    Realiza una limpieza total de un usuario para permitir re-pruebas de registro.
+    Realiza la limpieza de un usuario en la base de datos local y/o plataformas externas seleccionadas.
 
     Permite identificar al usuario por su 'email' (con 'institute' opcional) o por su 'user_id'.
     Si se proporciona 'user_id' y no coincide directamente con un Auth.id, buscará automáticamente
     si corresponde al ID de una solicitud de alumno (StudentCourseRequest) o docente (TeacherCourseRequest).
 
-    Operaciones:
-    1. Localiza el registro en la base de datos local (Auth) con sus identificadores externos (JIDs).
-    2. Elimina la identidad del usuario en Keycloak (IAM) si existe.
-    3. Elimina la identidad del usuario en Moodle (LMS) si existe y limpia su caché en Redis.
-    4. Elimina físicamente el registro en la tabla Auth (la eliminación en cascada remueve
-       perfil, tokens, solicitudes y JIDs).
+    Opciones de eliminación por plataforma:
+    - delete_keycloak: Si es True, elimina la identidad del usuario en Keycloak (IAM).
+    - delete_moodle: Si es True, elimina al usuario en Moodle (LMS) e invalida su caché en Redis.
+    - delete_local: Si es True, elimina físicamente el registro en la tabla Auth (la cascada
+      remueve perfil, tokens, solicitudes y JIDs).
     """
     if not user_id and not email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Debe proporcionar al menos 'user_id' o 'email' para identificar al usuario a eliminar.",
+        )
+
+    if not delete_keycloak and not delete_moodle and not delete_local:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Debe seleccionar al menos una plataforma o la base de datos local para eliminar.",
         )
 
     # 1. Validación de existencia y obtención de contexto
@@ -159,82 +181,127 @@ async def clear_user_data(
     moodle_id: int | None = user_auth.jids.moodle_id if user_auth.jids else None
 
     # 2. Eliminación en el Proveedor de Identidad (Keycloak)
-    # Si no se tiene kc_id en JIDs, intentar buscar por email en Keycloak
-    if not kc_id:
-        kc_lookup = await KeycloakService.get_user_by_email(
-            email=email, institute=institute
-        )
-        if kc_lookup.found and kc_lookup.user and "id" in kc_lookup.user:
-            try:
-                kc_id = UUID(str(kc_lookup.user["id"]))
-            except (ValueError, TypeError):
-                kc_id = None
-
-    kc_deleted = True
+    kc_deleted = False
     kc_error = None
-    if kc_id:
-        del_kc = await KeycloakService.delete_user(user_id=kc_id, institute=institute)
-        if not del_kc.deleted and "404" not in str(del_kc.error):
-            kc_deleted = False
-            kc_error = del_kc.error
+    if delete_keycloak:
+        # Si no se tiene kc_id en JIDs, intentar buscar por email en Keycloak
+        if not kc_id:
+            kc_lookup = await KeycloakService.get_user_by_email(
+                email=email, institute=institute
+            )
+            if kc_lookup.found and kc_lookup.user and "id" in kc_lookup.user:
+                try:
+                    kc_id = UUID(str(kc_lookup.user["id"]))
+                except (ValueError, TypeError):
+                    kc_id = None
+
+        if kc_id:
+            del_kc = await KeycloakService.delete_user(
+                user_id=kc_id, institute=institute
+            )
+            if del_kc.deleted or "404" in str(del_kc.error):
+                kc_deleted = True
+            else:
+                kc_deleted = False
+                kc_error = del_kc.error
+        else:
+            kc_deleted = True
 
     # 3. Eliminación en Moodle (LMS)
-    # Si no se tiene moodle_id en JIDs, intentar buscar por email en Moodle
-    if not moodle_id:
-        moodle_id = await SharedMoodleService.get_user_by_email(
-            email=email, institute=institute
-        )
-
-    moodle_deleted = True
+    moodle_deleted = False
     moodle_error = None
-    if moodle_id:
-        del_moodle = await RegisterMoodleService.delete_user(
-            user_id=moodle_id, institute=institute
-        )
-        if (
-            not del_moodle.deleted
-            and "invaliduser" not in str(del_moodle.error).lower()
-        ):
-            moodle_deleted = False
-            moodle_error = del_moodle.error
-
-        # Invalida caché de Redis asociado al usuario
-        try:
-            cache_key = redis_client.build_key(
-                "user_profile_by_email",
-                institute=institute.value,
-                email=email.lower(),
+    if delete_moodle:
+        # Si no se tiene moodle_id en JIDs, intentar buscar por email en Moodle
+        if not moodle_id:
+            moodle_id = await SharedMoodleService.get_user_by_email(
+                email=email, institute=institute
             )
-            await redis_client.delete(cache_key)
-        except Exception as e:
-            logger.warning(f"No se pudo invalidar la clave de Redis para {email}: {e}")
+
+        if moodle_id:
+            del_moodle = await RegisterMoodleService.delete_user(
+                user_id=moodle_id, institute=institute
+            )
+            if del_moodle.deleted or "invaliduser" in str(del_moodle.error).lower():
+                moodle_deleted = True
+            else:
+                moodle_deleted = False
+                moodle_error = del_moodle.error
+
+            # Invalida caché de Redis asociado al usuario
+            try:
+                cache_key = redis_client.build_key(
+                    "user_profile_by_email",
+                    institute=institute.value,
+                    email=email.lower(),
+                )
+                await redis_client.delete(cache_key)
+            except Exception as e:
+                logger.warning(
+                    f"No se pudo invalidar la clave de Redis para {email}: {e}"
+                )
+        else:
+            moodle_deleted = True
 
     # 4. Persistencia de la eliminación local (Hard Delete de Auth y relaciones en cascada)
-    try:
-        db.delete(user_auth)
-        db.commit()
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error al eliminar los registros en la base de datos.",
-        ) from e
+    local_deleted = False
+    if delete_local:
+        try:
+            db.delete(user_auth)
+            db.commit()
+            local_deleted = True
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error al eliminar los registros en la base de datos.",
+            ) from e
 
-    # 5. Notificación de posibles inconsistencias en servicios externos
-    if not kc_deleted:
+    # 5. Notificación de posibles inconsistencias en servicios externos solicitados
+    if delete_keycloak and not kc_deleted:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Datos locales borrados, pero falló la eliminación en Keycloak: {kc_error}",
+            detail=f"Falló la eliminación en Keycloak: {kc_error}",
         )
 
-    if not moodle_deleted:
+    if delete_moodle and not moodle_deleted:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Datos locales borrados, pero falló la eliminación en Moodle: {moodle_error}",
+            detail=f"Falló la eliminación en Moodle: {moodle_error}",
         )
+
+    deleted_targets = []
+    if delete_local and local_deleted:
+        deleted_targets.append("BD local")
+    if delete_keycloak and kc_deleted:
+        deleted_targets.append("Keycloak")
+    if delete_moodle and moodle_deleted:
+        deleted_targets.append("Moodle")
+
+    targets_str = (
+        ", ".join(deleted_targets) if deleted_targets else "Ninguna plataforma"
+    )
 
     return {
-        "message": f"Usuario {actual_user_id} ({email}) eliminado exitosamente de MACTI, Keycloak y Moodle."
+        "message": f"Limpieza completada para el usuario {actual_user_id} ({email}). Eliminado de: {targets_str}.",
+        "details": {
+            "user_id": actual_user_id,
+            "email": email,
+            "institute": institute.value,
+            "keycloak": {
+                "requested": delete_keycloak,
+                "deleted": kc_deleted if delete_keycloak else False,
+                "error": kc_error,
+            },
+            "moodle": {
+                "requested": delete_moodle,
+                "deleted": moodle_deleted if delete_moodle else False,
+                "error": moodle_error,
+            },
+            "local_db": {
+                "requested": delete_local,
+                "deleted": local_deleted,
+            },
+        },
     }
 
 
