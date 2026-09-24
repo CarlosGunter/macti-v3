@@ -9,6 +9,11 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.logging.macti_logger import (
+    log_info,
+    log_macti_error,
+    log_service_error,
+)
 from app.modules.nbgrader.services.jupyter_service import JupyterService
 from app.modules.register.repositories.create_account_repository import (
     CreateAccountRepository,
@@ -23,6 +28,8 @@ from app.shared.models.student_courses_model import StudentCourseRequest
 from app.shared.models.teacher_courses_model import TeacherCourseRequest
 
 from ..schemas import CreateAccountSchema
+
+LOGGER_NAME = "create_account_controller"
 
 
 class CreateAccountController:
@@ -46,6 +53,11 @@ class CreateAccountController:
 
         auth = repo.get_auth_with_relations(data.user_id)
         if auth is None:
+            log_macti_error(
+                logger_name=LOGGER_NAME,
+                error_code="USUARIO_NO_ENCONTRADO",
+                message="No se encontró una solicitud de cuenta para procesar el aprovisionamiento",
+            )
             raise HTTPException(
                 status_code=404,
                 detail={
@@ -63,11 +75,28 @@ class CreateAccountController:
             kc_user_id = await CreateAccountController._create_user_kc_or_raise(
                 auth, data.new_password
             )
+            log_info(
+                logger_name=LOGGER_NAME,
+                message="Usuario creado exitosamente en Keycloak",
+                extra={"service": "Keycloak", "institute": auth.institute.value},
+            )
+        else:
+            log_info(
+                logger_name=LOGGER_NAME,
+                message="Usuario existente recuperado en Keycloak",
+                extra={"service": "Keycloak", "institute": auth.institute.value},
+            )
 
         # MOODLE - crear usuario y delegar la resolución de cursos al caso de uso
         moodle_user_id = await CreateAccountController._create_moodle_user_or_raise(
             auth
         )
+        log_info(
+            logger_name=LOGGER_NAME,
+            message="Usuario creado exitosamente en Moodle",
+            extra={"service": "Moodle", "institute": auth.institute.value},
+        )
+
         approved_request = CreateAccountController._get_approved_course_request(auth)
         enroll_user_use_case = EnrollUserUseCase(
             moodle_service=MoodleService(),
@@ -79,6 +108,16 @@ class CreateAccountController:
             user_id=moodle_user_id,
         )
         if not enroll_result.enrolled:
+            log_service_error(
+                logger_name=LOGGER_NAME,
+                service="Moodle",
+                endpoint="enroll_user",
+                error_message=str(enroll_result.error),
+                extra={
+                    "institute": auth.institute.value,
+                    "reason": "Fallo en la inscripción de curso en Moodle",
+                },
+            )
             raise HTTPException(
                 status_code=502,
                 detail={
@@ -86,6 +125,12 @@ class CreateAccountController:
                     "message": f"Error al inscribir al usuario en el curso: {enroll_result.error}",
                 },
             )
+
+        log_info(
+            logger_name=LOGGER_NAME,
+            message="Usuario inscrito exitosamente en el curso en Moodle",
+            extra={"service": "Moodle", "institute": auth.institute.value},
+        )
 
         try:
             # Forzamos la limpieza del texto del rol
@@ -97,10 +142,6 @@ class CreateAccountController:
             first_name = getattr(auth.profile, "name", "")
             last_name = getattr(auth.profile, "last_name", "")
 
-            print(
-                f"📡 ENVIANDO A JUPYTER -> Email: {auth.email} | Rol: {rol_actual} | Nombre: {first_name} {last_name}"
-            )
-
             # Enviamos el rol y los nombres reales directamente a la API de JupyterHub
             await JupyterService.sync_user_role(
                 email=auth.email,
@@ -108,13 +149,33 @@ class CreateAccountController:
                 first_name=first_name,
                 last_name=last_name,
             )
+            log_info(
+                logger_name=LOGGER_NAME,
+                message="Rol y datos de usuario sincronizados exitosamente con JupyterHub",
+                extra={"service": "JupyterHub", "role": rol_actual},
+            )
 
         except Exception as e:
-            print(f"❌ FALLO CRÍTICO EN EL CONTROLADOR DE JUPYTER: {str(e)}")
+            log_service_error(
+                logger_name=LOGGER_NAME,
+                service="JupyterHub",
+                endpoint="sync_user_role",
+                error_message=str(e),
+                extra={
+                    "reason": "Error inesperado al sincronizar rol con JupyterHub",
+                    "role": rol_actual,
+                },
+            )
 
         # Finalizar: actualizar estados y limpiar token
         CreateAccountController._finalize_transaction(
             repo=repo, auth=auth, kc_user_id=kc_user_id, moodle_user_id=moodle_user_id
+        )
+
+        log_info(
+            logger_name=LOGGER_NAME,
+            message="Transacción finalizada: cuenta aprovisionada y activada correctamente",
+            extra={"institute": auth.institute.value},
         )
 
         return {"message": "Cuenta creada exitosamente"}
@@ -135,6 +196,12 @@ class CreateAccountController:
         """
 
         if auth.verification_token is None:
+            log_macti_error(
+                logger_name=LOGGER_NAME,
+                error_code="TOKEN_NO_ENCONTRADO",
+                message="No se encontró un token de verificación asociado a esta solicitud",
+                extra={"reason": "Registro de token no existe en BD"},
+            )
             raise HTTPException(
                 status_code=400,
                 detail={
@@ -144,6 +211,14 @@ class CreateAccountController:
             )
 
         if auth.verification_token.token != token:
+            log_macti_error(
+                logger_name=LOGGER_NAME,
+                error_code="TOKEN_INVALIDO",
+                message="El token de verificación proporcionado no es válido para esta solicitud",
+                extra={
+                    "reason": "El valor del token recibido no coincide con el registrado"
+                },
+            )
             raise HTTPException(
                 status_code=400,
                 detail={
@@ -153,6 +228,12 @@ class CreateAccountController:
             )
 
         if auth.verification_token.is_used:
+            log_macti_error(
+                logger_name=LOGGER_NAME,
+                error_code="TOKEN_INVALIDO",
+                message="El token de verificación ya ha sido utilizado",
+                extra={"reason": "Token marcado como is_used=True"},
+            )
             raise HTTPException(
                 status_code=400,
                 detail={
@@ -164,6 +245,12 @@ class CreateAccountController:
         if auth.verification_token.expires_at < datetime.now(
             tz=auth.verification_token.expires_at.tzinfo
         ):
+            log_macti_error(
+                logger_name=LOGGER_NAME,
+                error_code="TOKEN_INVALIDO",
+                message="El token de verificación ha expirado",
+                extra={"reason": "Fecha de expiración superada"},
+            )
             raise HTTPException(
                 status_code=400,
                 detail={
@@ -184,6 +271,14 @@ class CreateAccountController:
         all_requests = auth.student_course_requests + auth.teacher_course_requests
 
         if len(all_requests) != 1:
+            log_macti_error(
+                logger_name=LOGGER_NAME,
+                error_code="ESTADO_SOLICITUD_INVALIDO",
+                message="Se requiere exactamente una solicitud de curso para esta cuenta",
+                extra={
+                    "reason": f"Cantidad de solicitudes encontradas: {len(all_requests)}"
+                },
+            )
             raise HTTPException(
                 status_code=400,
                 detail={
@@ -193,6 +288,12 @@ class CreateAccountController:
             )
 
         if all_requests[0].status != RequestStatusEnum.APPROVED:
+            log_macti_error(
+                logger_name=LOGGER_NAME,
+                error_code="ESTADO_SOLICITUD_INVALIDO",
+                message="La solicitud de curso no está aprobada para esta cuenta",
+                extra={"reason": f"Estatus actual: {all_requests[0].status.value}"},
+            )
             raise HTTPException(
                 status_code=400,
                 detail={
@@ -220,6 +321,16 @@ class CreateAccountController:
         )
 
         if not kc_result.user_id:
+            log_service_error(
+                logger_name=LOGGER_NAME,
+                service="Keycloak",
+                endpoint="create_user",
+                error_message=str(kc_result.error),
+                extra={
+                    "institute": auth.institute.value,
+                    "reason": "Respuesta fallida de la API de Keycloak al crear usuario",
+                },
+            )
             raise HTTPException(
                 status_code=502,
                 detail={
@@ -277,6 +388,16 @@ class CreateAccountController:
         )
 
         if not moodle_result.user_id:
+            log_service_error(
+                logger_name=LOGGER_NAME,
+                service="Moodle",
+                endpoint="create_user",
+                error_message="Error al crear usuario en Moodle",
+                extra={
+                    "institute": auth.institute.value,
+                    "reason": "La API de Moodle no devolvió un user_id válido",
+                },
+            )
             raise HTTPException(
                 status_code=502,
                 detail={

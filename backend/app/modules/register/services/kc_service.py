@@ -11,8 +11,11 @@ from uuid import UUID
 
 import httpx
 
+from app.core.logging.macti_logger import log_info, log_service_error
 from app.shared.config.kc_configs import keycloak_configs
 from app.shared.enums.institutes_enum import InstitutesEnum
+
+LOGGER_NAME = "keycloak_service"
 
 
 @dataclass
@@ -81,7 +84,16 @@ class KeycloakService:
                 return response.json()["access_token"]
         except Exception as e:
             error_message = f"Fallo al autenticar con Keycloak ({institute.value}): {e}"
-            print(error_message)
+            log_service_error(
+                logger_name=LOGGER_NAME,
+                service="Keycloak",
+                endpoint="protocol/openid-connect/token",
+                error_message=str(e),
+                extra={
+                    "institute": institute.value,
+                    "reason": "Fallo al obtener token administrativo",
+                },
+            )
             # Mantenemos la propagación del error original
             raise Exception(error_message) from e
 
@@ -97,7 +109,6 @@ class KeycloakService:
         2. Envía el payload con datos básicos y credenciales iniciales.
         3. Valida la creación y recupera el ID único (UUID) generado por Keycloak.
         """
-        print(f"KeycloakService.create_user called for institute={institute}")
         try:
             config = keycloak_configs[institute]
             token = await cls._get_admin_token(institute)
@@ -134,10 +145,37 @@ class KeycloakService:
                     if created_user.found and created_user.user:
                         raw_user_id = created_user.user.get("id")
                         user_id = UUID(raw_user_id) if raw_user_id else None
+
+                    log_info(
+                        logger_name=LOGGER_NAME,
+                        message="Usuario registrado exitosamente en Keycloak",
+                        extra={"service": "Keycloak", "institute": institute.value},
+                    )
                     return CreateUserResult(created=True, user_id=user_id)
                 else:
+                    log_service_error(
+                        logger_name=LOGGER_NAME,
+                        service="Keycloak",
+                        endpoint="POST /admin/realms/{realm}/users",
+                        error_message=response.text,
+                        status_code=response.status_code,
+                        extra={
+                            "institute": institute.value,
+                            "reason": "Respuesta no exitosa al crear usuario",
+                        },
+                    )
                     return CreateUserResult(created=False, error=response.text)
         except Exception as e:
+            log_service_error(
+                logger_name=LOGGER_NAME,
+                service="Keycloak",
+                endpoint="POST /admin/realms/{realm}/users",
+                error_message=str(e),
+                extra={
+                    "institute": institute.value,
+                    "reason": "Excepción al intentar crear usuario",
+                },
+            )
             return CreateUserResult(created=False, error=str(e))
 
     @classmethod
@@ -163,6 +201,16 @@ class KeycloakService:
                     return GetUserResult(found=True, user=users[0])
                 return GetUserResult(found=False, user=None)
         except Exception as e:
+            log_service_error(
+                logger_name=LOGGER_NAME,
+                service="Keycloak",
+                endpoint="GET /admin/realms/{realm}/users",
+                error_message=str(e),
+                extra={
+                    "institute": institute.value,
+                    "reason": "Excepción al consultar usuario por email",
+                },
+            )
             return GetUserResult(found=False, user=None, error=str(e))
 
     @classmethod
@@ -185,12 +233,38 @@ class KeycloakService:
                     url, headers={"Authorization": f"Bearer {token}"}
                 )
                 if response.status_code in [200, 204]:
+                    log_info(
+                        logger_name=LOGGER_NAME,
+                        message="Usuario eliminado exitosamente en Keycloak",
+                        extra={"service": "Keycloak", "institute": institute.value},
+                    )
                     return DeleteUserResult(deleted=True, user_id=user_id)
+
+                log_service_error(
+                    logger_name=LOGGER_NAME,
+                    service="Keycloak",
+                    endpoint="DELETE /admin/realms/{realm}/users/{id}",
+                    error_message=response.text,
+                    status_code=response.status_code,
+                    extra={
+                        "institute": institute.value,
+                        "reason": "Respuesta fallida al eliminar usuario",
+                    },
+                )
                 return DeleteUserResult(
                     deleted=False, user_id=user_id, error=response.text
                 )
         except Exception as e:
-            print(f"Error deleting Keycloak user {user_id}: {e}")
+            log_service_error(
+                logger_name=LOGGER_NAME,
+                service="Keycloak",
+                endpoint="DELETE /admin/realms/{realm}/users/{id}",
+                error_message=str(e),
+                extra={
+                    "institute": institute.value,
+                    "reason": "Excepción al eliminar usuario",
+                },
+            )
             return DeleteUserResult(deleted=False, user_id=user_id, error=str(e))
 
     @classmethod
@@ -214,11 +288,37 @@ class KeycloakService:
                 )
 
                 if response.status_code == 204:
+                    log_info(
+                        logger_name=LOGGER_NAME,
+                        message="Contraseña actualizada exitosamente en Keycloak",
+                        extra={"service": "Keycloak", "institute": institute.value},
+                    )
                     return UpdatePasswordResult(success=True)
                 else:
+                    log_service_error(
+                        logger_name=LOGGER_NAME,
+                        service="Keycloak",
+                        endpoint="PUT /reset-password",
+                        error_message=response.text,
+                        status_code=response.status_code,
+                        extra={
+                            "institute": institute.value,
+                            "reason": "Fallo al resetear contraseña",
+                        },
+                    )
                     return UpdatePasswordResult(success=False, error=response.text)
 
         except Exception as e:
+            log_service_error(
+                logger_name=LOGGER_NAME,
+                service="Keycloak",
+                endpoint="PUT /reset-password",
+                error_message=str(e),
+                extra={
+                    "institute": institute.value,
+                    "reason": "Excepción al resetear contraseña",
+                },
+            )
             return UpdatePasswordResult(success=False, error=str(e))
 
     @classmethod
@@ -244,5 +344,15 @@ class KeycloakService:
                 )
                 users = response.json()
                 return UserExistsResult(exists=len(users) > 0)
-        except Exception:
+        except Exception as e:
+            log_service_error(
+                logger_name=LOGGER_NAME,
+                service="Keycloak",
+                endpoint="GET /users?email={email}",
+                error_message=str(e),
+                extra={
+                    "institute": institute.value,
+                    "reason": "Fallo al verificar existencia en Keycloak",
+                },
+            )
             return UserExistsResult(exists=False)

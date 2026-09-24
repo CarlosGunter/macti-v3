@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.core.logging.macti_logger import log_db_error, log_info, log_macti_error
 from app.modules.register.repositories.request_account_repository import (
     RequestAccountRepository,
 )
@@ -16,6 +17,8 @@ from app.modules.register.services.kc_service import KeycloakService
 from app.shared.enums.role_enum import AccountRoleEnum
 
 from ..schemas import StudentRequestSchema, TeacherRequestSchema
+
+LOGGER_NAME = "account_requests_controller"
 
 
 class AccountRequestsController:
@@ -53,7 +56,12 @@ class AccountRequestsController:
             raise  # La excepción ya está manejada
         except SQLAlchemyError as exc:
             repository.rollback()
-            print(f"Error de base de datos: {exc}")  # Log detallado para debugging
+            log_db_error(
+                logger_name=LOGGER_NAME,
+                operation="request_account_commit",
+                error_message=str(exc),
+                extra={"institute": data.institute.value, "role": role.value},
+            )
             raise HTTPException(
                 status_code=500,
                 detail={
@@ -63,6 +71,12 @@ class AccountRequestsController:
             ) from exc
         except Exception as exc:
             repository.rollback()
+            log_macti_error(
+                logger_name=LOGGER_NAME,
+                error_code="ERROR_INTERNO",
+                message=str(exc),
+                extra={"institute": data.institute.value, "role": role.value},
+            )
             raise HTTPException(
                 status_code=500,
                 detail={
@@ -81,6 +95,15 @@ class AccountRequestsController:
         )
 
         if existing_request is not None:
+            log_macti_error(
+                logger_name=LOGGER_NAME,
+                error_code="DUPLICADO",
+                message="Ya existe una solicitud para este correo e instituto",
+                extra={
+                    "institute": data.institute.value,
+                    "reason": "Solicitud duplicada en base de datos local",
+                },
+            )
             raise HTTPException(
                 status_code=400,
                 detail={
@@ -95,6 +118,15 @@ class AccountRequestsController:
     ) -> None:
         verify_existence = await KeycloakService.user_exists(data.email, data.institute)
         if verify_existence.exists:
+            log_macti_error(
+                logger_name=LOGGER_NAME,
+                error_code="EXISTE_KEYCLOAK",
+                message="Usuario ya registrado previamente en Keycloak",
+                extra={
+                    "institute": data.institute.value,
+                    "reason": "Cuenta activa existente en Keycloak",
+                },
+            )
             raise HTTPException(
                 status_code=400,
                 detail={
@@ -112,3 +144,14 @@ class AccountRequestsController:
         db_request = repository.create_account_request(role=role, data=data)
         repository.commit()
         repository.refresh(db_request)
+
+        # Registro del evento exitoso en BD local sin exponer IDs ni correos
+        log_info(
+            logger_name=LOGGER_NAME,
+            message="Solicitud de cuenta persistida exitosamente en base de datos local",
+            extra={
+                "institute": data.institute.value,
+                "role": role.value,
+                "database": "local",
+            },
+        )
