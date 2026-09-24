@@ -132,12 +132,12 @@ class CreateAccountController:
             extra={"service": "Moodle", "institute": auth.institute.value},
         )
 
-        try:
-            # Forzamos la limpieza del texto del rol
-            rol_actual = str(auth.profile.role.value).lower()
-            if "docente" in rol_actual:
-                rol_actual = "docente"
+        # Forzamos la limpieza del texto del rol antes del bloque try para garantizar enlace en Pyright
+        rol_actual = str(getattr(auth.profile, "role", "")).lower()
+        if "docente" in rol_actual:
+            rol_actual = "docente"
 
+        try:
             # Recuperamos los nombres reales de la DB de MACTI
             first_name = getattr(auth.profile, "name", "")
             last_name = getattr(auth.profile, "last_name", "")
