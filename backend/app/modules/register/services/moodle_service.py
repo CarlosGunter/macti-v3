@@ -101,6 +101,10 @@ class MoodleService:
                 service="Moodle",
                 endpoint=endpoint,
                 error_message=result_response["error_message"],
+                extra={
+                    "institute": institute.value,
+                    "reason": "Petición HTTP a Moodle fallida",
+                },
             )
             return EnrollUserResult(
                 enrolled=False,
@@ -115,12 +119,17 @@ class MoodleService:
                 service="Moodle",
                 endpoint=endpoint,
                 error_message=error_moodle,
+                extra={
+                    "institute": institute.value,
+                    "reason": "Excepción retornada en payload de Moodle",
+                },
             )
             return EnrollUserResult(enrolled=False, error=error_moodle)
 
         log_info(
             logger_name="moodle_service",
-            message=f"Usuario {user_id} matriculado con éxito en curso {course_id}",
+            message="Usuario matriculado con éxito en el curso de Moodle",
+            extra={"service": "Moodle", "institute": institute.value},
         )
         return EnrollUserResult(enrolled=True, error=None)
 
@@ -148,10 +157,6 @@ class MoodleService:
             "users[0][auth]": "oauth2",
         }
 
-        print(
-            f"DEBUG: Enviando creación de usuario a Moodle ({institute.value}): {user_data['email']}"
-        )
-
         result_response = await make_moodle_request(
             url=endpoint,
             params=params,
@@ -160,6 +165,16 @@ class MoodleService:
         )
 
         if not result_response["success"]:
+            log_service_error(
+                logger_name="moodle_service",
+                service="Moodle",
+                endpoint="core_user_create_users",
+                error_message=result_response["error_message"],
+                extra={
+                    "institute": institute.value,
+                    "reason": "Fallo al crear usuario en Moodle",
+                },
+            )
             return CreateUserResult(
                 created=False, error=result_response["error_message"]
             )
@@ -173,10 +188,22 @@ class MoodleService:
         user_id = int(user_id) if user_id is not None else None
 
         if user_id is None:
+            log_service_error(
+                logger_name="moodle_service",
+                service="Moodle",
+                endpoint="core_user_create_users",
+                error_message="ID de usuario no retornado por Moodle",
+                extra={"institute": institute.value, "reason": "Respuesta vacía de ID"},
+            )
             return CreateUserResult(
                 created=False, error="ID de usuario no retornado por Moodle"
             )
         # Moodle retorna una lista de diccionarios con los IDs de los usuarios creados.
+        log_info(
+            logger_name="moodle_service",
+            message="Usuario creado exitosamente en la instancia de Moodle",
+            extra={"service": "Moodle", "institute": institute.value},
+        )
         return CreateUserResult(created=True, user_id=user_id)
 
     @staticmethod
@@ -204,11 +231,26 @@ class MoodleService:
         )
 
         if not result_response["success"]:
+            log_service_error(
+                logger_name="moodle_service",
+                service="Moodle",
+                endpoint="core_user_delete_users",
+                error_message=result_response["error_message"],
+                extra={
+                    "institute": institute.value,
+                    "reason": "Fallo al eliminar usuario en Moodle",
+                },
+            )
             return DeleteUserResult(
                 deleted=False,
                 error=result_response["error_message"],
             )
 
+        log_info(
+            logger_name="moodle_service",
+            message="Usuario eliminado exitosamente en Moodle",
+            extra={"service": "Moodle", "institute": institute.value},
+        )
         return DeleteUserResult(deleted=True, user_id=user_id)
 
     @staticmethod
@@ -255,6 +297,16 @@ class MoodleService:
             institute=institute,
         )
         if not result_response["success"]:
+            log_service_error(
+                logger_name="moodle_service",
+                service="Moodle",
+                endpoint="local_sitemanagers_get_site_managers",
+                error_message=result_response["error_message"],
+                extra={
+                    "institute": institute.value,
+                    "reason": "Fallo al consultar administradores",
+                },
+            )
             return GetAdminsResult(
                 success=False,
                 error_message=result_response["error_message"],
@@ -320,12 +372,32 @@ class MoodleService:
         )
 
         if not result_response["success"]:
+            log_service_error(
+                logger_name="moodle_service",
+                service="Moodle",
+                endpoint="core_course_create_courses",
+                error_message=result_response["error_message"],
+                extra={
+                    "institute": institute.value,
+                    "reason": "Fallo en llamada de creación de cursos",
+                },
+            )
             return CreateCourseResult(
                 course_ids=[], error=result_response["error_message"]
             )
 
         result = result_response.get("data", [])
         if not isinstance(result, list):
+            log_service_error(
+                logger_name="moodle_service",
+                service="Moodle",
+                endpoint="core_course_create_courses",
+                error_message="Respuesta inesperada de Moodle al crear cursos",
+                extra={
+                    "institute": institute.value,
+                    "reason": "Formato de respuesta inválido",
+                },
+            )
             return CreateCourseResult(
                 course_ids=[],
                 error="Respuesta inesperada de Moodle al crear cursos",
@@ -337,4 +409,9 @@ class MoodleService:
             if isinstance(course, dict) and "id" in course
         ]
 
+        log_info(
+            logger_name="moodle_service",
+            message="Cursos creados exitosamente en Moodle",
+            extra={"service": "Moodle", "institute": institute.value},
+        )
         return CreateCourseResult(course_ids=course_ids, error=None)

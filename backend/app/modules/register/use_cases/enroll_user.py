@@ -48,15 +48,15 @@ class EnrollUserUseCase:
             resolved_user_id = auth.jids.moodle_id
 
         if resolved_user_id is None:
-            msg = (
-                f"El usuario {auth.email} (ID: {auth.id}) "
-                f"no tiene moodle_id asignado en JIDs"
-            )
+            msg = "El usuario no tiene moodle_id asignado en JIDs"
             log_macti_error(
                 logger_name="enroll_user_use_case",
                 error_code="MOODLE_ID_MISSING",
                 message=msg,
-                extra={"auth_id": auth.id, "email": auth.email},
+                extra={
+                    "institute": self.institute.value,
+                    "reason": "moodle_id ausente en JIDs",
+                },
             )
             return EnrollUserResult(enrolled=False, error=msg)
 
@@ -77,9 +77,9 @@ class EnrollUserUseCase:
                     error_code="COURSE_CREATION_FAILED",
                     message=msg,
                     extra={
-                        "auth_id": auth.id,
-                        "moodle_id": resolved_user_id,
+                        "institute": self.institute.value,
                         "course_full_name": request_course_data.course_full_name,
+                        "reason": "La llamada a create_courses no devolvió IDs de curso",
                     },
                 )
                 return EnrollUserResult(enrolled=False, error=msg)
@@ -90,7 +90,10 @@ class EnrollUserUseCase:
                 logger_name="enroll_user_use_case",
                 error_code="COURSE_ID_MISSING",
                 message=msg,
-                extra={"auth_id": auth.id, "moodle_id": resolved_user_id},
+                extra={
+                    "institute": self.institute.value,
+                    "reason": "Lista de course_ids vacía",
+                },
             )
             return EnrollUserResult(enrolled=False, error=msg)
 
@@ -107,18 +110,13 @@ class EnrollUserUseCase:
             )
 
             if not enrolled.enrolled:
-                msg = (
-                    f"Fallo al matricular usuario {resolved_user_id} "
-                    f"en curso {course_id}"
-                )
+                msg = "Fallo al matricular usuario en curso de Moodle"
                 log_macti_error(
                     logger_name="enroll_user_use_case",
                     error_code="ENROLLMENT_FAILED",
                     message=msg,
                     extra={
-                        "auth_id": auth.id,
-                        "moodle_id": resolved_user_id,
-                        "course_id": course_id,
+                        "institute": self.institute.value,
                         "role_id": moodle_role.value,
                         "reason": enrolled.error,
                     },
