@@ -116,3 +116,5 @@ view_bd.py
 # Internal logs
 *.log
 ./logs/
+
+test_redis_doodle.py
