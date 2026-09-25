@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from types import SimpleNamespace
 
 from app.core.cache.redis_client import redis_client
-from app.core.logging.macti_logger import log_info, log_service_error
+from app.core.logging.macti_logger import log_info
 from app.shared.config.moodle_configs import MOODLE_CONFIG
 from app.shared.enums.institutes_enum import InstitutesEnum
 from app.shared.enums.role_moodle_enum import RoleEnum
@@ -402,7 +402,9 @@ class MoodleService:
         )
 
     @staticmethod
-    async def invalidate_user_courses_cache(institute: InstitutesEnum, moodle_userid: int) -> None:
+    async def invalidate_user_courses_cache(
+        institute: InstitutesEnum, moodle_userid: int
+    ) -> None:
         """
         Invalida manualmente la caché de cursos inscritos para un usuario específico.
         Útil tras ejecutar inscripciones (enroll_user).

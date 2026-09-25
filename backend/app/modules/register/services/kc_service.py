@@ -109,7 +109,10 @@ class KeycloakService:
                 service="Keycloak",
                 endpoint="protocol/openid-connect/token",
                 error_message=str(e),
-                extra={"institute": institute.value, "reason": "Fallo al obtener token administrativo"},
+                extra={
+                    "institute": institute.value,
+                    "reason": "Fallo al obtener token administrativo",
+                },
             )
             raise Exception(error_message) from e
 
@@ -164,7 +167,9 @@ class KeycloakService:
 
                     # Invalidar la clave de user_exists para reflejar el alta
                     email_hash = cls._hash_email(user_data["email"])
-                    await redis_client.delete(f"kc:{institute.value}:user_exists:{email_hash}")
+                    await redis_client.delete(
+                        f"kc:{institute.value}:user_exists:{email_hash}"
+                    )
 
                     log_info(
                         logger_name=LOGGER_NAME,
@@ -179,7 +184,10 @@ class KeycloakService:
                         endpoint="POST /admin/realms/{realm}/users",
                         error_message=response.text,
                         status_code=response.status_code,
-                        extra={"institute": institute.value, "reason": "Respuesta no exitosa al crear usuario"},
+                        extra={
+                            "institute": institute.value,
+                            "reason": "Respuesta no exitosa al crear usuario",
+                        },
                     )
                     return CreateUserResult(created=False, error=response.text)
         except Exception as e:
@@ -188,7 +196,10 @@ class KeycloakService:
                 service="Keycloak",
                 endpoint="POST /admin/realms/{realm}/users",
                 error_message=str(e),
-                extra={"institute": institute.value, "reason": "Excepción al intentar crear usuario"},
+                extra={
+                    "institute": institute.value,
+                    "reason": "Excepción al intentar crear usuario",
+                },
             )
             return CreateUserResult(created=False, error=str(e))
 
@@ -231,7 +242,10 @@ class KeycloakService:
                 service="Keycloak",
                 endpoint="GET /admin/realms/{realm}/users",
                 error_message=str(e),
-                extra={"institute": institute.value, "reason": "Excepción al consultar usuario por email"},
+                extra={
+                    "institute": institute.value,
+                    "reason": "Excepción al consultar usuario por email",
+                },
             )
             return GetUserResult(found=False, user=None, error=str(e))
 
@@ -271,7 +285,10 @@ class KeycloakService:
                     endpoint="DELETE /admin/realms/{realm}/users/{id}",
                     error_message=response.text,
                     status_code=response.status_code,
-                    extra={"institute": institute.value, "reason": "Respuesta fallida al eliminar usuario"},
+                    extra={
+                        "institute": institute.value,
+                        "reason": "Respuesta fallida al eliminar usuario",
+                    },
                 )
                 return DeleteUserResult(
                     deleted=False, user_id=user_id, error=response.text
@@ -282,7 +299,10 @@ class KeycloakService:
                 service="Keycloak",
                 endpoint="DELETE /admin/realms/{realm}/users/{id}",
                 error_message=str(e),
-                extra={"institute": institute.value, "reason": "Excepción al eliminar usuario"},
+                extra={
+                    "institute": institute.value,
+                    "reason": "Excepción al eliminar usuario",
+                },
             )
             return DeleteUserResult(deleted=False, user_id=user_id, error=str(e))
 
@@ -320,7 +340,10 @@ class KeycloakService:
                         endpoint="PUT /reset-password",
                         error_message=response.text,
                         status_code=response.status_code,
-                        extra={"institute": institute.value, "reason": "Fallo al resetear contraseña"},
+                        extra={
+                            "institute": institute.value,
+                            "reason": "Fallo al resetear contraseña",
+                        },
                     )
                     return UpdatePasswordResult(success=False, error=response.text)
 
@@ -330,7 +353,10 @@ class KeycloakService:
                 service="Keycloak",
                 endpoint="PUT /reset-password",
                 error_message=str(e),
-                extra={"institute": institute.value, "reason": "Excepción al resetear contraseña"},
+                extra={
+                    "institute": institute.value,
+                    "reason": "Excepción al resetear contraseña",
+                },
             )
             return UpdatePasswordResult(success=False, error=str(e))
 
@@ -374,6 +400,9 @@ class KeycloakService:
                 service="Keycloak",
                 endpoint="GET /users?email={email}",
                 error_message=str(e),
-                extra={"institute": institute.value, "reason": "Fallo al verificar existencia en Keycloak"},
+                extra={
+                    "institute": institute.value,
+                    "reason": "Fallo al verificar existencia en Keycloak",
+                },
             )
             return UserExistsResult(exists=False)
