@@ -2,14 +2,18 @@
 Service for interacting with Moodle LMS API - Project MACTI
 """
 
+import hashlib
 from dataclasses import dataclass, field
 from types import SimpleNamespace
 
 from app.core.cache.redis_client import redis_client
+from app.core.logging.macti_logger import log_info
 from app.shared.config.moodle_configs import MOODLE_CONFIG
 from app.shared.enums.institutes_enum import InstitutesEnum
 from app.shared.enums.role_moodle_enum import RoleEnum
 from app.shared.services.moodle_client import make_moodle_request
+
+LOGGER_NAME = "moodle_service"
 
 
 @dataclass
@@ -29,6 +33,11 @@ class MoodleService:
     """
 
     @staticmethod
+    def _hash_identifier(value: str) -> str:
+        """Genera un hash corto para no exponer PII (como emails) en las llaves de Redis."""
+        return hashlib.sha256(value.strip().lower().encode()).hexdigest()[:12]
+
+    @staticmethod
     async def get_user_profile_by_email(institute: InstitutesEnum, user_email: str):
         """
         Busca un usuario en el LMS utilizando su dirección de correo electrónico.
@@ -38,14 +47,16 @@ class MoodleService:
 
         Resultado cacheado para evitar llamadas repetidas a Moodle.
         """
-        # Intentar obtener del caché
-        cache_key = redis_client.build_key(
-            "user_profile_by_email",
-            institute=institute.value,
-            email=user_email.lower(),
-        )
+        email_hash = MoodleService._hash_identifier(user_email)
+        cache_key = f"moodle:{institute.value}:profile_by_email:{email_hash}"
+
         cached = await redis_client.get(cache_key)
         if cached:
+            log_info(
+                logger_name=LOGGER_NAME,
+                message="Perfil de usuario obtenido desde caché Redis",
+                extra={"service": "Redis", "institute": institute.value},
+            )
             return SimpleNamespace(user_profile=cached, error=None)
 
         config = MOODLE_CONFIG[institute]
@@ -69,12 +80,11 @@ class MoodleService:
                 error=result["error_message"],
             )
 
-        # Moodle retorna una lista; si hay coincidencia, tomamos el primer resultado
         user_profile = result["data"][0] if result["data"] else {}
 
-        # Guardar en caché si se encontró
         if user_profile:
-            await redis_client.set(cache_key, user_profile)
+            # TTL de 1 hora para perfiles de usuario
+            await redis_client.set(cache_key, user_profile, ttl=3600)
 
         return SimpleNamespace(
             user_profile=user_profile,
@@ -91,15 +101,15 @@ class MoodleService:
 
         Resultado cacheado para evitar llamadas repetidas a Moodle.
         """
-        # Intentar obtener del caché
-        cache_key = redis_client.build_key(
-            "user_profile",
-            institute=institute.value,
-            user_id=user_id,
-            course_id=course_id,
-        )
+        cache_key = f"moodle:{institute.value}:course_profile:{course_id}:{user_id}"
+
         cached = await redis_client.get(cache_key)
         if cached:
+            log_info(
+                logger_name=LOGGER_NAME,
+                message="Perfil de curso de usuario obtenido desde caché Redis",
+                extra={"service": "Redis", "institute": institute.value},
+            )
             return SimpleNamespace(user_profile=cached, error=None)
 
         config = MOODLE_CONFIG[institute]
@@ -130,9 +140,8 @@ class MoodleService:
         user_profiles = result["data"]
         user_profile = user_profiles[0] if user_profiles else None
 
-        # Guardar en caché si se encontró
         if user_profile:
-            await redis_client.set(cache_key, user_profile)
+            await redis_client.set(cache_key, user_profile, ttl=3600)
 
         return SimpleNamespace(
             user_profile=user_profile,
@@ -158,15 +167,17 @@ class MoodleService:
 
         Resultado cacheado para evitar llamadas repetidas a Moodle.
         """
-        # Intentar obtener del caché
-        cache_key = redis_client.build_key(
-            "course_by_shortname",
-            institute=institute.value,
-            shortname=shortname.lower(),
-        )
+        clean_shortname = shortname.strip().lower()
+        cache_key = f"moodle:{institute.value}:course_by_shortname:{clean_shortname}"
+
         cached = await redis_client.get(cache_key)
         if cached is not None:
-            return cached  # type: ignore[return-value]  # ya es int | None guardado
+            log_info(
+                logger_name=LOGGER_NAME,
+                message="ID de curso obtenido desde caché Redis",
+                extra={"service": "Redis", "institute": institute.value},
+            )
+            return cached
 
         config = MOODLE_CONFIG[institute]
         params = {
@@ -191,8 +202,8 @@ class MoodleService:
         ):
             course_id = result["data"]["courses"][0]["id"]
 
-        # Guardar en caché (incluso None para no repetir búsquedas fallidas)
-        await redis_client.set(cache_key, course_id)
+        # Cachear incluso si es None para mitigar repetidas consultas a cursos inexistentes
+        await redis_client.set(cache_key, course_id, ttl=3600)
 
         return course_id
 
@@ -205,16 +216,12 @@ class MoodleService:
 
         Resultado cacheado para evitar llamadas repetidas a Moodle.
         """
-        # Intentar obtener del caché
-        cache_key = redis_client.build_key(
-            "assignment_by_name",
-            institute=institute.value,
-            course_id=course_id,
-            assignment_name=assignment_name.lower().strip(),
-        )
+        name_hash = MoodleService._hash_identifier(assignment_name)
+        cache_key = f"moodle:{institute.value}:assignment:{course_id}:{name_hash}"
+
         cached = await redis_client.get(cache_key)
         if cached is not None:
-            return cached  # type: ignore[return-value]  # ya es int | None guardado
+            return cached
 
         config = MOODLE_CONFIG[institute]
         params = {
@@ -243,15 +250,13 @@ class MoodleService:
                             assignment_id = assign["id"]
                             break
 
-        # Guardar en caché (incluso None para no repetir búsquedas fallidas)
-        await redis_client.set(cache_key, assignment_id)
-
+        await redis_client.set(cache_key, assignment_id, ttl=3600)
         return assignment_id
 
     @staticmethod
     async def update_grade(
         institute: InstitutesEnum,
-        course_id: int,  # noqa: ARG004
+        course_id: int,
         assignment_id: int,
         moodle_userid: int,
         grade: float,
@@ -285,9 +290,14 @@ class MoodleService:
         )
 
         if result["success"]:
-            # Invalidar caché de asignaciones de este curso
+            # Invalidación limpia por patrón jerárquico del curso
             await redis_client.delete_pattern(
-                f"moodle:assignment_by_name:*{institute.value}*{course_id}*"
+                f"moodle:{institute.value}:assignment:{course_id}:*"
+            )
+            log_info(
+                logger_name=LOGGER_NAME,
+                message="Calificación actualizada en Moodle y caché invalidada",
+                extra={"service": "Moodle", "institute": institute.value},
             )
             return {"success": True, "data": result.get("data")}
 
@@ -303,6 +313,15 @@ class MoodleService:
         """
         Función auxiliar para obtener la lista de emails de administradores de un instituto.
         """
+        cache_key = f"moodle:{institute.value}:admins:list"
+        cached = await redis_client.get(cache_key)
+        if cached:
+            return GetAdminsResult(
+                success=True,
+                error_message=None,
+                admins=cached,
+            )
+
         config = MOODLE_CONFIG[institute]
         endpoint = config.moodle_url
 
@@ -324,18 +343,15 @@ class MoodleService:
                 admins=[],
             )
 
+        admins_data = result_response.get("data", [])
+        await redis_client.set(cache_key, admins_data, ttl=7200)
+
         return GetAdminsResult(
             success=True,
             error_message=None,
-            admins=result_response.get("data", []),
+            admins=admins_data,
         )
 
-    # Función para poder obtener los cursos en los que un usuario está inscrito, utilizando su ID
-    # de Moodle. Esta función es útil para el endpoint que consulta los cursos inscritos por
-    # usuario, y la llamamos desde el MoodleService del módulo de cursos para reutilizar la lógica
-    # de consulta a Moodle. De esta forma, centralizamos toda la lógica de interacción con Moodle
-    # dentro del servicio de Shared, y el módulo de cursos simplemente delega la consulta al
-    # servicio centralizado.
     @staticmethod
     async def get_user_courses(institute: InstitutesEnum, moodle_userid: int):
         """
@@ -344,14 +360,14 @@ class MoodleService:
 
         Resultado cacheado para evitar llamadas repetidas a Moodle.
         """
-        # Intentar obtener del caché
-        cache_key = redis_client.build_key(
-            "user_courses",
-            institute=institute.value,
-            moodle_userid=moodle_userid,
-        )
+        cache_key = f"moodle:{institute.value}:user_courses:{moodle_userid}"
         cached = await redis_client.get(cache_key)
         if cached:
+            log_info(
+                logger_name=LOGGER_NAME,
+                message="Cursos inscritos del usuario obtenidos desde caché Redis",
+                extra={"service": "Redis", "institute": institute.value},
+            )
             return SimpleNamespace(courses=cached, error=None)
 
         config = MOODLE_CONFIG[institute]
@@ -377,13 +393,24 @@ class MoodleService:
 
         courses = result["data"] if isinstance(result["data"], list) else []
 
-        # Guardar en caché
-        await redis_client.set(cache_key, courses)
+        # Cachear por 30 minutos (1800 seg)
+        await redis_client.set(cache_key, courses, ttl=1800)
 
         return SimpleNamespace(
             courses=courses,
             error=None,
         )
+
+    @staticmethod
+    async def invalidate_user_courses_cache(
+        institute: InstitutesEnum, moodle_userid: int
+    ) -> None:
+        """
+        Invalida manualmente la caché de cursos inscritos para un usuario específico.
+        Útil tras ejecutar inscripciones (enroll_user).
+        """
+        cache_key = f"moodle:{institute.value}:user_courses:{moodle_userid}"
+        await redis_client.delete(cache_key)
 
     @staticmethod
     async def get_user_roles(
@@ -394,7 +421,6 @@ class MoodleService:
         """
         Función auxiliar para recuperar roles asignados en un curso de Moodle.
         """
-
         get_user_profile_result = await MoodleService.get_user_profile(
             institute=institute, user_id=moodle_id, course_id=course_id
         )
@@ -403,8 +429,6 @@ class MoodleService:
             return []
 
         user_roles = get_user_profile_result.user_profile.get("roles", [])
-
-        # Conversión de IDs numéricos de Moodle al Enum RoleEnum para tipado fuerte
         list_roles = [RoleEnum(role["roleid"]) for role in user_roles]
 
         return list_roles

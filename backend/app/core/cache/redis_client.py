@@ -36,7 +36,7 @@ class RedisClient:
         if self.redis:
             await self.redis.close()
 
-    async def get(self, key: str) -> dict | None:
+    async def get(self, key: str) -> Any | None:
         """Obtiene un valor del caché y lo deserializa desde JSON."""
         if not self.redis:
             return None
