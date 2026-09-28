@@ -34,10 +34,13 @@ export default function AccountRequestTeacherForm() {
     <Form action={formAction} disabled={isPending}>
       <FieldGroup>
         <FieldSet>
-          <div className="leading-10">
+          <div className="leading-16 space-y-2">
             <h2 className="text-2xl font-bold">Registro de Profesor</h2>
-            <p className="text-muted-foreground">
-              El administrador se encargará de revisar y aprobar tu solicitud.
+            <p className="text-muted-foreground leading-normal">
+              <span className="font-semibold">Si aun no tienes una cuenta</span>, puedes
+              solicitarla llenando el siguiente formulario. Una vez que tu solicitud sea
+              aprobada por el administrador del instituto se creará el curso y tu cuenta
+              de profesor.
             </p>
           </div>
 
