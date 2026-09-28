@@ -58,10 +58,13 @@ export default function AccountRequestForm({ institute }: { institute: string })
     <Form action={formAction} disabled={isPending} className="w-full">
       <FieldGroup>
         <FieldSet>
-          <div className="leading-10">
-            <h2 className="text-2xl font-bold">Registrate en una dependencia</h2>
-            <p className="text-muted-foreground">
-              El administrador de la dependencia revisará y aprobará tu solicitud.
+          <div className="leading-16 space-y-2">
+            <h2 className="text-2xl font-bold">Alumno - Incribete a un curso</h2>
+            <p className="text-muted-foreground leading-normal">
+              <span className="font-semibold">Si aún no tienes una cuenta</span>, puedes
+              solicitarla llenando el siguiente formulario donde deberás seleccionar el
+              curso al que deseas inscribirte y el profesor a cargo revisará y aprobará tu
+              inscripción.
             </p>
           </div>
 
