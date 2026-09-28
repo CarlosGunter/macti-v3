@@ -35,20 +35,7 @@ export default function CourseCard({
         </div>
 
         <div className="flex items-center gap-2 text-slate-950 text-sm font-semibold pt-1">
-          <p className="flex items-center gap-2 text-[#0b2027]/90 font-bold text-xs sm:text-sm">
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <title>Tiempo del curso</title>
-              <circle cx="12" cy="12" r="9"></circle>
-              <polyline points="12 7 12 12 15 14"></polyline>
-            </svg>
-            Tiempo del curso [ 10hrs ]
-          </p>
+          <p className="flex items-center gap-2 text-[#0b2027]/90 font-bold text-xs sm:text-sm"></p>
         </div>
 
         <div className="flex gap-4 pt-4 w-full *:flex-1">{children}</div>
