@@ -1,5 +1,6 @@
+import { Clock } from "lucide-react";
 import Image from "next/image";
-import FallbackImage from "@/assets/images/fallback-img.webp";
+import FallbackImage from "@/assets/images/fallback-image.webp";
 
 interface CourseCardProps {
   children?: React.ReactNode;
@@ -7,6 +8,7 @@ interface CourseCardProps {
   title: string;
   description?: string | null;
   imageUrl?: string | null;
+  progress?: number | null;
 }
 
 export default function CourseCard({
@@ -14,6 +16,7 @@ export default function CourseCard({
   title,
   description,
   imageUrl,
+  progress,
 }: CourseCardProps) {
   return (
     <div className="bg-card border-slate-800/80 rounded-[2rem] overflow-hidden shadow-xl flex h-full flex-col transform hover:-translate-y-1 hover:border-black hover:shadow-md transition-all duration-200">
@@ -30,12 +33,19 @@ export default function CourseCard({
 
         <div className="space-y-2 pt-1 text-slate-800 text-xs tracking-tight font-medium">
           <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
-            {description || "Curso sin descripción disponible."}
+            {description || "Curso MACTI."}
           </p>
         </div>
 
         <div className="flex items-center gap-2 text-slate-950 text-sm font-semibold pt-1">
-          <p className="flex items-center gap-2 text-[#0b2027]/90 font-bold text-xs sm:text-sm"></p>
+          <Clock className="w-4 h-4 bg-current" />
+          <p className="flex items-center gap-2 text-[#0b2027]/90 font-bold text-xs sm:text-sm">
+            {progress !== null && progress !== undefined ? (
+              <span>{progress * 100}% concluído</span>
+            ) : (
+              <span>Sin progreso</span>
+            )}
+          </p>
         </div>
 
         <div className="flex gap-4 pt-4 w-full *:flex-1">{children}</div>
