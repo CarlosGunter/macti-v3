@@ -45,6 +45,7 @@ export default function ListEnrolledCourses({ institute }: ListEnrolledCoursesPr
             key={course.id}
             title={course.displayname}
             description={course.summary}
+            progress={course.progress}
           >
             {course.role.some((r) => privilegeRoles.high.includes(r)) && (
               <Anchor variant="secondary" href={`./${course.id}/solicitudes`}>
