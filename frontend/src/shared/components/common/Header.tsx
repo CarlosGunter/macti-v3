@@ -40,7 +40,10 @@ export async function Header({ institute, homePage = `/` }: HeaderProps) {
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-6 p-4 md:px-6 lg:px-8">
         <HeaderLogo institute={institute} homePage={homePage} />
         <nav className="text-lg font-medium flex items-center gap-4 md:gap-6">
-          <Link href="/faq" className="hover:text-accent-invert-foreground transition">
+          <Link
+            href="/sobre-macti"
+            className="hover:text-accent-invert-foreground transition"
+          >
             FAQ
           </Link>
           <Link
