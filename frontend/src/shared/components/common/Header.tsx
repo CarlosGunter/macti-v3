@@ -1,15 +1,34 @@
-import { headers } from "next/dist/server/request/headers";
+import { headers } from "next/headers";
 import Link from "next/link";
-import { MACTILogo } from "@/assets/logos/MactiLogo";
 import { getAuthInstance } from "@/infra/auth/auth-factory";
 import { AutenticatedHeader } from "./AutenticatedHeader";
+import { HeaderLogo } from "./HeaderLogo";
 import { UnauthenticatedHeader } from "./UnauthenticatedHeader";
 
+/**
+ * Propiedades para el componente Header.
+ */
 interface HeaderProps {
+  /**
+   * Identificador del instituto al que pertenece la vista.
+   */
   institute: string;
+  /**
+   * Ruta de inicio general alternativa (por defecto "/").
+   */
+  homePage?: string;
 }
 
-export async function Header({ institute }: HeaderProps) {
+/**
+ * Encabezado principal para las vistas bajo el contexto de un instituto.
+ *
+ * Muestra el logo con redirección dinámica (a `/[institute]` o a `/`),
+ * enlaces informativos y controles de sesión según el estado de autenticación.
+ *
+ * @param props - Propiedades del componente Header.
+ * @returns Elemento del encabezado renderizado en servidor.
+ */
+export async function Header({ institute, homePage = `/` }: HeaderProps) {
   const auth = getAuthInstance(institute);
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -19,13 +38,7 @@ export async function Header({ institute }: HeaderProps) {
   return (
     <header className="w-full md:w-11/12 backdrop-blur-md top-0 z-50 border-b-8 border-border">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-6 p-4 md:px-6 lg:px-8">
-        <Link
-          href="/"
-          aria-label="Ir a la página principal"
-          className="w-37.5 transform hover:-translate-y-0.5 duration-200"
-        >
-          <MACTILogo className="w-full h-auto" />
-        </Link>
+        <HeaderLogo institute={institute} homePage={homePage} />
         <nav className="text-lg font-medium flex items-center gap-4 md:gap-6">
           <Link href="/faq" className="hover:text-accent-invert-foreground transition">
             FAQ
