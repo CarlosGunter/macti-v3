@@ -37,7 +37,7 @@ export default function ListEnrolledCourses({ institute }: ListEnrolledCoursesPr
   }
 
   return (
-    <article className="mx-auto max-w-6xl md:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8  w-full">
+    <article className="mx-auto max-w-6xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full">
       {enrolledCourses && enrolledCourses.length > 0 ? (
         enrolledCourses.map((course) => (
           <CourseCard
@@ -48,7 +48,11 @@ export default function ListEnrolledCourses({ institute }: ListEnrolledCoursesPr
             progress={course.progress}
           >
             {course.role.some((r) => privilegeRoles.high.includes(r)) && (
-              <Anchor variant="secondary" href={`./${course.id}/solicitudes`}>
+              <Anchor
+                variant="secondary"
+                href={`./${course.id}/solicitudes`}
+                aria-label="Solicitudes de usuarios que queran inscribirse en el curso"
+              >
                 Solicitudes
               </Anchor>
             )}

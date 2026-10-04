@@ -23,12 +23,14 @@ export function Anchor({
   className = "",
   variant = "default",
   external = false,
+  ...props
 }: AnchorProps) {
   return (
     <Link
       href={href}
       target={external ? "_blank" : "_self"}
       className={`flex justify-center items-center gap-2 p-2 rounded-lg font-bold transition-all duration-200 ${variants[variant]} ${className}`}
+      {...props}
     >
       {children}
     </Link>
