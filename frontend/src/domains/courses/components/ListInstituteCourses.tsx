@@ -35,7 +35,7 @@ export default async function ListInstituteCourses({
           key={`course-${course.id}`}
           courseId={course.id}
           title={course.displayname || course.fullname}
-          description={course.summary || course.shortname}
+          description={course.summary}
         >
           {session && (
             <RequestJoinCourseButton institute={institute} courseId={course.id} />
