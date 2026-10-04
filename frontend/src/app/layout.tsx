@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bai_Jamjuree, Inter, Rajdhani } from "next/font/google";
 import "./globals.css";
 import { Footer } from "@/shared/components/common/Footer";
+import { Toaster } from "@/shared/shadcn/components/ui/sonner";
 
 const baiJamjuree = Bai_Jamjuree({
   subsets: ["latin"],
@@ -37,10 +38,13 @@ export default function RootLayout({
       className={`${baiJamjuree.variable} ${rajdhani.variable} ${inter.variable} scheme-light`}
     >
       <body
-        className={`antialiased flex flex-col gap-6 min-h-screen justify-between items-center bg-background text-foreground selection:bg-accent selection:text-accent-foreground`}
+        className={`antialiased min-h-screen bg-background text-foreground selection:bg-accent selection:text-accent-foreground`}
       >
-        {children}
-        <Footer />
+        <div className="flex min-h-screen flex-col items-center justify-between gap-6">
+          {children}
+          <Footer />
+        </div>
+        <Toaster position="bottom-center" />
       </body>
     </html>
   );
