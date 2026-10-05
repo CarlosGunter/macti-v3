@@ -7,12 +7,16 @@
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.core.cache.redis_client import redis_client
 from app.core.db.database import Base, engine
 from app.core.environment import environment
+from app.core.limiter import limiter
 from app.core.logging.config import setup_logging
 from app.modules.courses.routes import router as courses_router
 from app.modules.nbgrader.routes import router as jupyter_router
@@ -52,6 +56,17 @@ app = FastAPI(
     lifespan=lifespan,
     root_path="/macti-api",
 )
+
+
+# Wrapper compatible con el sistema de tipos de Pyright/FastAPI para RateLimitExceeded
+async def rate_limit_handler(request: Request, exc: Exception) -> Response:
+    return _rate_limit_exceeded_handler(request, exc)  # type: ignore[arg-type]
+
+
+# Configuración de Rate Limiting (SlowAPI)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # Configuración de CORS
 frontend_origin = (
