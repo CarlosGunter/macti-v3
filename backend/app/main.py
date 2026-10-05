@@ -57,9 +57,11 @@ app = FastAPI(
     root_path="/macti-api",
 )
 
+
 # Wrapper compatible con el sistema de tipos de Pyright/FastAPI para RateLimitExceeded
 async def rate_limit_handler(request: Request, exc: Exception) -> Response:
     return _rate_limit_exceeded_handler(request, exc)  # type: ignore[arg-type]
+
 
 # Configuración de Rate Limiting (SlowAPI)
 app.state.limiter = limiter
