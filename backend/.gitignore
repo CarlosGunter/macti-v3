@@ -118,3 +118,4 @@ view_bd.py
 ./logs/
 
 test_redis_doodle.py
+test_rate_limit.py
