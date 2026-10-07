@@ -60,7 +60,7 @@ class AuthenticatedStudentRequestController:
                 status_code=404,
                 detail={
                     "error_code": "USUARIO_NO_ENCONTRADO",
-                    "message": "No se encontró el usuario autenticado en la base de datos.",
+                    "message": "Hubo un error al recuperar la información del usuario.",
                 },
             )
 

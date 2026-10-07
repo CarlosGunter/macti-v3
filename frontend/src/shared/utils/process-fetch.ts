@@ -60,7 +60,7 @@ export async function processFetch(
   const fetchData = await tryCatch(fetchResponse.data.json());
   if (fetchData.error) return [true, null];
   if (!fetchResponse.data.ok) {
-    return [true, fetchData.data];
+    return [true, fetchData.data.detail ?? fetchData.data];
   }
 
   return [false, fetchData.data];

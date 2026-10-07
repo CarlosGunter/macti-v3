@@ -50,7 +50,13 @@ export default function ListCourseRequestsTeachers({
   }
 
   return (
-    <section className="grid gap-4 mx-auto w-full max-w-7xl">
+    <section className="grid gap-4 mx-auto w-full max-w-6xl">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground">Solicitudes de Cursos</h2>
+        <p className="text-foreground/70">
+          Aquí puedes ver todas las solicitudes de cursos que los docentes han realizado.
+        </p>
+      </div>
       <CourseFilters statusFilter={statusFilter} setStatusFilter={setStatusFilter} />
 
       {courseRequests?.map((request) => (
