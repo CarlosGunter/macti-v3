@@ -24,6 +24,7 @@ from app.modules.nbgrader.routes import router as nbgrader_router
 from app.modules.nbgrader.routes import sync_router
 from app.modules.register.routes import router as register_router
 from app.modules.temp.routes import router as temp_router
+from app.modules.users.routes import router as users_router
 from app.shared import models as _models  # noqa: F401
 
 # PAl logging
@@ -93,6 +94,7 @@ app.include_router(courses_router)
 app.include_router(nbgrader_router)
 app.include_router(sync_router)
 app.include_router(jupyter_router)
+app.include_router(users_router)
 
 if environment.APP_ENV == "development":
     app.include_router(temp_router)
