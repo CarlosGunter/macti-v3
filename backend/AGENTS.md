@@ -63,4 +63,5 @@ Para optimizar el uso de tokens y mantener el contexto de la conversación limpi
 
 - **Base de Datos y Modelos**: Consulta el skill `macti-backend-db` en [.agents/skills/macti-backend-db/SKILL.md](.agents/skills/macti-backend-db/SKILL.md).
 - **Arquitectura MVCS**: Consulta el skill `macti-backend-arch` en [.agents/skills/macti-backend-arch/SKILL.md](.agents/skills/macti-backend-arch/SKILL.md).
+- **Migración a DI (Controladores)**: Consulta el skill `macti-backend-di-migration` en [.agents/skills/macti-backend-di-migration/SKILL.md](.agents/skills/macti-backend-di-migration/SKILL.md).
 - **Git y Control de Versiones**: Consulta el skill `macti-backend-git` en [.agents/skills/macti-backend-git/SKILL.md](.agents/skills/macti-backend-git/SKILL.md).

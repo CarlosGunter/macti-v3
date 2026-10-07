@@ -18,6 +18,7 @@ Para evitar saturar la memoria y el contexto de la conversación con detalles in
 ### Backend Skills:
 - **Base de Datos y Modelos**: [macti-backend-db](backend/.agents/skills/macti-backend-db/SKILL.md) (PostgreSQL, SQLite, SQLAlchemy, Alembic, Repositorios).
 - **Arquitectura**: [macti-backend-arch](backend/.agents/skills/macti-backend-arch/SKILL.md) (Rutas, Esquemas, Controladores, Módulos).
+- **Migración a DI (Controladores)**: [macti-backend-di-migration](backend/.agents/skills/macti-backend-di-migration/SKILL.md) (Inyección de dependencias en constructores y rutas).
 - **Git/Commits**: [macti-backend-git](backend/.agents/skills/macti-backend-git/SKILL.md) (Ramas, Commits convencionales, Pull Requests del backend).
 
 ### Frontend Skills:
