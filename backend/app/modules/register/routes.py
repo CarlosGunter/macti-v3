@@ -3,10 +3,14 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Path, Query, status
+from fastapi import APIRouter, Depends, Path, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.db.database import get_db
+from app.core.limiter import limiter
+from app.modules.register.controllers.account_requests import (
+    AccountRequestsController,
+)
 from app.modules.register.controllers.authenticated_student_request import (
     AuthenticatedStudentRequestController,
 )
@@ -24,15 +28,7 @@ from app.modules.register.controllers.list_account_requests_teacher import (
 from app.modules.register.controllers.update_request_status import (
     RequestStatusController,
 )
-from app.shared.dependecies.auth_current_user import CurrentUser, get_current_user
-from app.shared.dependecies.auth_scope_course_manager import ScopeCourseManager
-from app.shared.dependecies.auth_scopes_base import AuthScopes
-from app.shared.enums.institutes_enum import InstitutesEnum
-from app.shared.enums.role_enum import AccountRoleEnum
-from app.shared.enums.status_enum import RequestStatusEnum
-
-from .controllers.account_requests import AccountRequestsController
-from .schemas import (
+from app.modules.register.schemas import (
     AccountRequestResponse,
     AuthenticatedStudentRequestSchema,
     AuthenticatedTeacherRequestSchema,
@@ -46,6 +42,12 @@ from .schemas import (
     TeacherRequestSchema,
     UserInfoResponse,
 )
+from app.shared.dependecies.auth_current_user import CurrentUser, get_current_user
+from app.shared.dependecies.auth_scope_course_manager import ScopeCourseManager
+from app.shared.dependecies.auth_scopes_base import AuthScopes
+from app.shared.enums.institutes_enum import InstitutesEnum
+from app.shared.enums.role_enum import AccountRoleEnum
+from app.shared.enums.status_enum import RequestStatusEnum
 
 # Definición del router con el prefijo /register para agrupar lógica de registro
 router = APIRouter(prefix="/register", tags=["Registro"])
@@ -58,7 +60,9 @@ router = APIRouter(prefix="/register", tags=["Registro"])
     response_model=AccountRequestResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("5/minute")
 async def request_student_account(
+    request: Request,  # noqa: ARG001
     body_info: StudentRequestSchema,
     db: Annotated[Session, Depends(get_db)],
 ):
@@ -74,7 +78,9 @@ async def request_student_account(
     response_model=AccountRequestResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("10/minute")
 async def request_authenticated_student_account(
+    request: Request,  # noqa: ARG001
     body_info: AuthenticatedStudentRequestSchema,
     db: Annotated[Session, Depends(get_db)],
     user_info: Annotated[CurrentUser, Depends(get_current_user)],
@@ -94,7 +100,9 @@ async def request_authenticated_student_account(
     response_model=AccountRequestResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("5/minute")
 async def request_teacher_account(
+    request: Request,  # noqa: ARG001
     body_info: TeacherRequestSchema,
     db: Annotated[Session, Depends(get_db)],
 ):
@@ -110,7 +118,9 @@ async def request_teacher_account(
     response_model=AccountRequestResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("10/minute")
 async def request_authenticated_teacher_account(
+    request: Request,  # noqa: ARG001
     body_info: AuthenticatedTeacherRequestSchema,
     db: Annotated[Session, Depends(get_db)],
     user_info: Annotated[CurrentUser, Depends(get_current_user)],
@@ -198,7 +208,12 @@ async def update_request_status(
     description="Endpoint para obtener la información de usuario asociada a un token de verificación. Usado en el flujo de confirmación de email.",
     response_model=UserInfoResponse,
 )
-async def confirm_email(token: UUID, db: Annotated[Session, Depends(get_db)]):
+@limiter.limit("15/minute")
+async def confirm_email(
+    request: Request,  # noqa: ARG001
+    token: UUID,
+    db: Annotated[Session, Depends(get_db)],
+):
     return await GetUserInfoController.get_user_info(token=token, db=db)
 
 
@@ -207,7 +222,10 @@ async def confirm_email(token: UUID, db: Annotated[Session, Depends(get_db)]):
     summary="Finalizar creación de cuenta",
     response_model=CreateAccountResponse,
 )
+@limiter.limit("5/minute")
 async def create_account(
-    body_info: CreateAccountSchema, db: Annotated[Session, Depends(get_db)]
+    request: Request,  # noqa: ARG001
+    body_info: CreateAccountSchema,
+    db: Annotated[Session, Depends(get_db)],
 ):
     return await CreateAccountController.create_account(data=body_info, db=db)
