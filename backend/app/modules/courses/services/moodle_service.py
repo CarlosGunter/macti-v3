@@ -6,6 +6,7 @@
 
 from types import SimpleNamespace
 
+from app.core.logging.macti_logger import log_service_error
 from app.shared.config.moodle_configs import MOODLE_CONFIG
 from app.shared.enums.institutes_enum import InstitutesEnum
 from app.shared.services.moodle_client import make_moodle_request
@@ -32,9 +33,23 @@ class MoodleService:
         """
         config = MOODLE_CONFIG.get(institute, None)
         if not config:
+            error_msg = (
+                "Configuración de Moodle no encontrada para el instituto especificado."
+            )
+            log_service_error(
+                logger_name="moodle_service",
+                service="Moodle",
+                endpoint="core_course_get_courses",
+                error_message=error_msg,
+                status_code=None,
+                extra={
+                    "institute": institute.value,
+                    "reason": "Configuración faltante en MOODLE_CONFIG",
+                },
+            )
             return SimpleNamespace(
                 courses=[],
-                error="Configuración de Moodle no encontrada para el instituto especificado.",
+                error=error_msg,
             )
 
         params = {

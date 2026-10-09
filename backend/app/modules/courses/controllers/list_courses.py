@@ -7,6 +7,7 @@
 
 from fastapi import HTTPException
 
+from app.core.logging.macti_logger import log_macti_error
 from app.modules.courses.services.moodle_service import MoodleService
 from app.shared.enums.institutes_enum import InstitutesEnum
 
@@ -44,6 +45,17 @@ class ListCoursesController:
 
         # Manejo de errores provenientes del Web Service
         if courses.error:
+            # Registro en log estructurado del fallo de negocio/servicio en el controlador
+            log_macti_error(
+                logger_name="list_courses_controller",
+                error_code="MOODLE_COURSE_LIST_ERROR",
+                message=f"Fallo al recuperar cursos de Moodle ({institute.value}): {courses.error}",
+                extra={
+                    "institute": institute.value,
+                    "filter_ids": ids,
+                },
+            )
+
             # Si el servicio retorna un error, se propaga al cliente con un código
             # estandarizado para que el front-end pueda mostrar una alerta adecuada.
             raise HTTPException(
