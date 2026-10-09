@@ -85,17 +85,35 @@ async def make_moodle_request(
 
     except httpx.TimeoutException:
         institute_str = f" ({institute.value})" if institute else ""
+        error_msg = f"Timeout conectando a Moodle{institute_str}"
+        log_service_error(
+            logger_name="moodle_client",
+            service="Moodle",
+            endpoint=ws_function,
+            error_message=error_msg,
+            status_code=None,
+            extra={"institute": institute_val, "reason": "Timeout"},
+        )
         return {
             "success": False,
             "data": None,
-            "error_message": f"Timeout conectando a Moodle{institute_str}",
+            "error_message": error_msg,
         }
     except httpx.RequestError as e:
         institute_str = f" ({institute.value})" if institute else ""
+        error_msg = f"Error de conexión con Moodle{institute_str}: {str(e)}"
+        log_service_error(
+            logger_name="moodle_client",
+            service="Moodle",
+            endpoint=ws_function,
+            error_message=error_msg,
+            status_code=None,
+            extra={"institute": institute_val, "reason": "RequestError"},
+        )
         return {
             "success": False,
             "data": None,
-            "error_message": f"Error de conexión con Moodle{institute_str}: {str(e)}",
+            "error_message": error_msg,
         }
     except Exception as e:
         error_msg = f"Fallo de conexión o timeout con Moodle: {str(e)}"
