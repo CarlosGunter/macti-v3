@@ -40,6 +40,10 @@ async def list_courses(
     ids: list[int] | None = Query(
         None, description="Lista de IDs de cursos para filtrar"
     ),
+    search: str | None = Query(
+        None,
+        description="Término de búsqueda para filtrar por nombre o clave del curso",
+    ),
 ) -> list[CourseResponseSchema]:
     """
     Endpoint público/administrativo para obtener el catálogo completo de Moodle.
@@ -54,11 +58,14 @@ async def list_courses(
         extra={
             "institute": institute.value,
             "filter_ids": ids,
+            "search": search,
             "client_ip": client_ip,
         },
     )
 
-    return await ListCoursesController.list_courses(institute=institute, ids=ids)
+    return await ListCoursesController.list_courses(
+        institute=institute, ids=ids, search=search
+    )
 
 
 @router.get(
@@ -70,6 +77,10 @@ async def list_courses(
 async def list_user_enrolled_courses(
     request: Request,
     institute: InstitutesEnum = Query(..., description="Nombre del instituto"),
+    search: str | None = Query(
+        None,
+        description="Término de búsqueda para filtrar por nombre o clave del curso",
+    ),
     user_info: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[UserEnrolledCoursesResponseSchema]:
@@ -86,9 +97,9 @@ async def list_user_enrolled_courses(
         event="consulta_cursos_inscritos",
         user_id=getattr(user_info, "id", None),
         ip=client_ip,
-        extra={"institute": institute.value},
+        extra={"institute": institute.value, "search": search},
     )
 
     return await UserEnrolledCoursesController.get_user_enrolled_courses(
-        institute=institute, user_info=user_info, db=db
+        institute=institute, user_info=user_info, db=db, search=search
     )

@@ -20,7 +20,9 @@ class ListCoursesController:
 
     @staticmethod
     async def list_courses(
-        institute: InstitutesEnum, ids: list[int] | None = None
+        institute: InstitutesEnum,
+        ids: list[int] | None = None,
+        search: str | None = None,
     ) -> list:
         """
         Lista todos los cursos disponibles en la plataforma Moodle para un instituto específico.
@@ -66,6 +68,30 @@ class ListCoursesController:
                 },
             )
 
+        course_list = courses.courses or []
+
+        # Filtrado tipo LIKE insensible a mayúsculas/minúsculas
+        if search and search.strip():
+            query = search.strip().lower()
+
+            def match_course(c) -> bool:
+                fn = getattr(c, "fullname", None) or (
+                    c.get("fullname") if isinstance(c, dict) else ""
+                )
+                sn = getattr(c, "shortname", None) or (
+                    c.get("shortname") if isinstance(c, dict) else ""
+                )
+                dn = getattr(c, "displayname", None) or (
+                    c.get("displayname") if isinstance(c, dict) else ""
+                )
+                return (
+                    query in str(fn or "").lower()
+                    or query in str(sn or "").lower()
+                    or query in str(dn or "").lower()
+                )
+
+            course_list = [c for c in course_list if match_course(c)]
+
         # Retorna el listado de cursos directamente.
         # Moodle suele retornar: id, shortname, fullname, displayname e idnumber.
-        return courses.courses
+        return course_list
