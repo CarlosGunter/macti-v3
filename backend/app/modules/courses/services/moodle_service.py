@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from app.core.logging.macti_logger import log_service_error
 from app.shared.config.moodle_configs import MOODLE_CONFIG
 from app.shared.enums.institutes_enum import InstitutesEnum
-from app.shared.services.moodle_client import make_moodle_request
+from app.shared.services.moodle_client import DEFAULT_MOODLE_TIMEOUT, make_moodle_request
 
 # Mandamos a llamar el servicio de shared para reutilizar la lógica de consulta de cursos inscritos por usuario, que es un método que agregamos recientemente en el MoodleService de Shared.
 from app.shared.services.moodle_service import MoodleService as SharedMoodleService
@@ -21,7 +21,11 @@ class MoodleService:
     """
 
     @staticmethod
-    async def get_courses(institute: InstitutesEnum, ids: list[int] | None = None):
+    async def get_courses(
+        institute: InstitutesEnum,
+        ids: list[int] | None = None,
+        timeout: float | None = None,
+    ):
         """
         Recupera la lista completa de cursos disponibles en un instituto.
 
@@ -33,9 +37,7 @@ class MoodleService:
         """
         config = MOODLE_CONFIG.get(institute, None)
         if not config:
-            error_msg = (
-                "Configuración de Moodle no encontrada para el instituto especificado."
-            )
+            error_msg = "Configuración de Moodle no encontrada para el instituto especificado."
             log_service_error(
                 logger_name="moodle_service",
                 service="Moodle",
@@ -63,12 +65,16 @@ class MoodleService:
             if data is not None:
                 data[f"options[ids][{i}]"] = course_id
 
+        # Determinación del timeout efectivo (personalizado o estándar por defecto)
+        effective_timeout = timeout if timeout is not None else DEFAULT_MOODLE_TIMEOUT
+
         # Ejecución de la petición a través del cliente asíncrono compartido
         result = await make_moodle_request(
             url=config.moodle_url,
             params=params,
             institute=institute,
             data=data,
+            timeout=effective_timeout,
         )
 
         if not result["success"]:

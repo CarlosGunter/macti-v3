@@ -10,6 +10,10 @@ import httpx
 from app.core.logging.macti_logger import log_service_error
 from app.shared.enums.institutes_enum import InstitutesEnum
 
+# Configuración de timeout por defecto para peticiones hacia Moodle:
+# 10.0s límite global y 3.0s para establecer conexión inicial.
+DEFAULT_MOODLE_TIMEOUT = httpx.Timeout(10.0, connect=3.0)
+
 
 async def make_moodle_request(
     url: str,
@@ -18,7 +22,7 @@ async def make_moodle_request(
     data: dict | None = None,
     json: dict | None = None,
     institute: InstitutesEnum | None = None,
-    timeout: float = 30.0,
+    timeout: float | httpx.Timeout = DEFAULT_MOODLE_TIMEOUT,
     *,
     check_moodle_errors: bool = True,
 ) -> dict:
@@ -26,7 +30,7 @@ async def make_moodle_request(
     Realiza una petición HTTP a Moodle con gestión de errores centralizada.
 
     Lógica de validación:
-    1. Ejecuta la petición asíncrona mediante httpx.
+    1. Ejecuta la petición asíncrona mediante httpx aplicando timeout explícito.
     2. Valida errores de protocolo HTTP (4xx, 5xx).
     3. Analiza el cuerpo JSON en busca de la clave 'exception', la cual Moodle
         usa para reportar errores lógicos incluso en respuestas exitosas (200 OK).
