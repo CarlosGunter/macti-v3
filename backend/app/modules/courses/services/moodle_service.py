@@ -9,7 +9,10 @@ from types import SimpleNamespace
 from app.core.logging.macti_logger import log_service_error
 from app.shared.config.moodle_configs import MOODLE_CONFIG
 from app.shared.enums.institutes_enum import InstitutesEnum
-from app.shared.services.moodle_client import DEFAULT_MOODLE_TIMEOUT, make_moodle_request
+from app.shared.services.moodle_client import (
+    DEFAULT_MOODLE_TIMEOUT,
+    make_moodle_request,
+)
 
 # Mandamos a llamar el servicio de shared para reutilizar la lógica de consulta de cursos inscritos por usuario, que es un método que agregamos recientemente en el MoodleService de Shared.
 from app.shared.services.moodle_service import MoodleService as SharedMoodleService
@@ -37,7 +40,9 @@ class MoodleService:
         """
         config = MOODLE_CONFIG.get(institute, None)
         if not config:
-            error_msg = "Configuración de Moodle no encontrada para el instituto especificado."
+            error_msg = (
+                "Configuración de Moodle no encontrada para el instituto especificado."
+            )
             log_service_error(
                 logger_name="moodle_service",
                 service="Moodle",
