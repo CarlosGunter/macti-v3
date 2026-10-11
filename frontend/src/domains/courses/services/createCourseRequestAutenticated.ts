@@ -14,6 +14,12 @@ interface CreateCourseRequestAutenticatedProps {
   headers?: HeadersInit;
 }
 
+/**
+ * Envía una solicitud autenticada de inscripción o creación de curso para un usuario.
+ *
+ * @param props - Parámetros de la solicitud: instituto, rol de usuario, datos del curso y headers opcionales.
+ * @returns Un objeto con el estado `success`, `message` en éxito, o `error` en caso de fallo.
+ */
 export async function createCourseRequestAutenticated({
   institute,
   userRole,
@@ -44,5 +50,11 @@ export async function createCourseRequestAutenticated({
         "Error al enviar la solicitud. Inténtalo de nuevo más tarde.",
     };
 
-  return { success: true, error: null };
+  return {
+    success: true,
+    error: null,
+    message:
+      (courseRequestResult as { message?: string })?.message ||
+      "Solicitud enviada exitosamente.",
+  };
 }

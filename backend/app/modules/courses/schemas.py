@@ -36,3 +36,7 @@ class UserEnrolledCoursesResponseSchema(CourseResponseSchema):
 
     # Lista de nombres de roles (ej. ['student'], ['editingteacher']).
     role: list[str] | None = None
+    progress: float | None = None  # Porcentaje de progreso
+    completed: int | None = None  # Número de actividades completadas
+    startdate: int | None = None  # Timestamp de inicio del curso
+    enddate: int | None = None  # Timestamp de finalización del curso

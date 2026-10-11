@@ -5,6 +5,7 @@ import json
 from typing import Any
 
 import redis.asyncio as aioredis
+from loguru import logger
 
 from app.core.environment import environment
 
@@ -24,11 +25,13 @@ class RedisClient:
                 db=environment.REDIS_DB,
                 password=environment.REDIS_PASSWORD or None,
                 decode_responses=True,
+                socket_connect_timeout=1.5,
+                socket_timeout=1.5,
             )
             await self.redis.ping()
-            print("✅ Redis conectado")
+            logger.info("✅ Redis conectado")
         except Exception as e:
-            print(f"⚠️ Redis no disponible, operando sin caché: {e}")
+            logger.warning(f"⚠️ Redis no disponible, operando sin caché: {e}")
             self.redis = None
 
     async def disconnect(self) -> None:
@@ -40,34 +43,47 @@ class RedisClient:
         """Obtiene un valor del caché y lo deserializa desde JSON."""
         if not self.redis:
             return None
-        cached = await self.redis.get(key)
-        if cached:
-            return json.loads(cached)
+        try:
+            cached = await self.redis.get(key)
+            if cached:
+                return json.loads(cached)
+        except Exception as e:
+            logger.debug(f"Error al leer clave {key} en Redis: {e}")
+            return None
         return None
 
     async def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """Guarda un valor en caché serializado como JSON."""
         if not self.redis:
             return
-        ttl = ttl or environment.REDIS_CACHE_TTL
-        await self.redis.setex(key, ttl, json.dumps(value, default=str))
+        try:
+            ttl = ttl or environment.REDIS_CACHE_TTL
+            await self.redis.setex(key, ttl, json.dumps(value, default=str))
+        except Exception as e:
+            logger.debug(f"Error al escribir clave {key} en Redis: {e}")
 
     async def delete(self, key: str) -> None:
         """Elimina una clave del caché."""
         if self.redis:
-            await self.redis.delete(key)
+            try:
+                await self.redis.delete(key)
+            except Exception as e:
+                logger.debug(f"Error al eliminar clave {key} en Redis: {e}")
 
     async def delete_pattern(self, pattern: str) -> None:
         """Elimina todas las claves que coinciden con un patrón."""
         if not self.redis:
             return
-        cursor = 0
-        while True:
-            cursor, keys = await self.redis.scan(cursor, match=pattern, count=100)
-            if keys:
-                await self.redis.delete(*keys)
-            if cursor == 0:
-                break
+        try:
+            cursor = 0
+            while True:
+                cursor, keys = await self.redis.scan(cursor, match=pattern, count=100)
+                if keys:
+                    await self.redis.delete(*keys)
+                if cursor == 0:
+                    break
+        except Exception as e:
+            logger.debug(f"Error al eliminar patrón {pattern} en Redis: {e}")
 
     @staticmethod
     def build_key(prefix: str, **kwargs) -> str:

@@ -25,7 +25,10 @@ class UserEnrolledCoursesController:
 
     @staticmethod
     async def get_user_enrolled_courses(
-        institute: InstitutesEnum, user_info: CurrentUser, db: Session
+        institute: InstitutesEnum,
+        user_info: CurrentUser,
+        db: Session,
+        search: str | None = None,
     ) -> list:
         """
         Obtiene todos los cursos donde el usuario está inscrito en un instituto dado.
@@ -33,7 +36,8 @@ class UserEnrolledCoursesController:
         Flujo de ejecución:
         1. Resuelve el moodle_id local mediante el kc_id del token.
         2. Consulta a la API de Moodle los cursos inscritos.
-        3. Enriquecimiento: Para cada curso, consulta el rol (teacher, student, etc.).
+        3. Filtra la lista por el término de búsqueda si se proporcionó.
+        4. Inyección de roles específicos por curso únicamente a los cursos filtrados.
         """
         # 1. Obtención de identidad cruzada (Keycloak ID -> Moodle ID)
         repo = UserEnrolledCoursesRepository(db)
@@ -46,7 +50,29 @@ class UserEnrolledCoursesController:
             institute, user_id
         )
 
-        # 3. Inyección de roles específicos por curso
+        # 3. Filtrado tipo LIKE (insensible a mayúsculas/minúsculas)
+        if search and search.strip():
+            query = search.strip().lower()
+
+            def match_course(c) -> bool:
+                fn = getattr(c, "fullname", None) or (
+                    c.get("fullname") if isinstance(c, dict) else ""
+                )
+                sn = getattr(c, "shortname", None) or (
+                    c.get("shortname") if isinstance(c, dict) else ""
+                )
+                dn = getattr(c, "displayname", None) or (
+                    c.get("displayname") if isinstance(c, dict) else ""
+                )
+                return (
+                    query in str(fn or "").lower()
+                    or query in str(sn or "").lower()
+                    or query in str(dn or "").lower()
+                )
+
+            enrolled_courses = [c for c in enrolled_courses if match_course(c)]
+
+        # 4. Inyección de roles específicos por curso
         enriched = await UserEnrolledCoursesController._add_role_to_courses(
             institute=institute, courses=enrolled_courses, user_id=user_id
         )
@@ -106,9 +132,27 @@ class UserEnrolledCoursesController:
         dentro de ese contexto académico. Si falla, asigna por defecto el rol 'student'.
         """
         for course in courses:
+            raw_id = (
+                course.get("id")
+                if isinstance(course, dict)
+                else getattr(course, "id", None)
+            )
+
+            try:
+                course_id = int(raw_id) if raw_id is not None else None
+            except (ValueError, TypeError):
+                course_id = None
+
+            if course_id is None:
+                if isinstance(course, dict):
+                    course["role"] = ["student"]
+                else:
+                    course.role = ["student"]
+                continue
+
             try:
                 get_user_profile = await SharedMoodleService.get_user_profile(
-                    institute=institute, user_id=user_id, course_id=course["id"]
+                    institute=institute, user_id=user_id, course_id=course_id
                 )
 
                 if (
@@ -116,14 +160,24 @@ class UserEnrolledCoursesController:
                     or not get_user_profile.user_profile
                     or not get_user_profile.user_profile.get("roles")
                 ):
-                    course["role"] = ["student"]
+                    if isinstance(course, dict):
+                        course["role"] = ["student"]
+                    else:
+                        course.role = ["student"]
                 else:
-                    course["role"] = [
+                    roles = [
                         role["shortname"]
                         for role in get_user_profile.user_profile["roles"]
                     ]
+                    if isinstance(course, dict):
+                        course["role"] = roles
+                    else:
+                        course.role = roles
             except Exception:
-                course["role"] = ["student"]
+                if isinstance(course, dict):
+                    course["role"] = ["student"]
+                else:
+                    course.role = ["student"]
 
         return courses
 

@@ -7,6 +7,7 @@
 
 from fastapi import HTTPException
 
+from app.core.logging.macti_logger import log_macti_error
 from app.modules.courses.services.moodle_service import MoodleService
 from app.shared.enums.institutes_enum import InstitutesEnum
 
@@ -19,7 +20,9 @@ class ListCoursesController:
 
     @staticmethod
     async def list_courses(
-        institute: InstitutesEnum, ids: list[int] | None = None
+        institute: InstitutesEnum,
+        ids: list[int] | None = None,
+        search: str | None = None,
     ) -> list:
         """
         Lista todos los cursos disponibles en la plataforma Moodle para un instituto específico.
@@ -44,6 +47,17 @@ class ListCoursesController:
 
         # Manejo de errores provenientes del Web Service
         if courses.error:
+            # Registro en log estructurado del fallo de negocio/servicio en el controlador
+            log_macti_error(
+                logger_name="list_courses_controller",
+                error_code="MOODLE_COURSE_LIST_ERROR",
+                message=f"Fallo al recuperar cursos de Moodle ({institute.value}): {courses.error}",
+                extra={
+                    "institute": institute.value,
+                    "filter_ids": ids,
+                },
+            )
+
             # Si el servicio retorna un error, se propaga al cliente con un código
             # estandarizado para que el front-end pueda mostrar una alerta adecuada.
             raise HTTPException(
@@ -54,6 +68,30 @@ class ListCoursesController:
                 },
             )
 
+        course_list = courses.courses or []
+
+        # Filtrado tipo LIKE insensible a mayúsculas/minúsculas
+        if search and search.strip():
+            query = search.strip().lower()
+
+            def match_course(c) -> bool:
+                fn = getattr(c, "fullname", None) or (
+                    c.get("fullname") if isinstance(c, dict) else ""
+                )
+                sn = getattr(c, "shortname", None) or (
+                    c.get("shortname") if isinstance(c, dict) else ""
+                )
+                dn = getattr(c, "displayname", None) or (
+                    c.get("displayname") if isinstance(c, dict) else ""
+                )
+                return (
+                    query in str(fn or "").lower()
+                    or query in str(sn or "").lower()
+                    or query in str(dn or "").lower()
+                )
+
+            course_list = [c for c in course_list if match_course(c)]
+
         # Retorna el listado de cursos directamente.
         # Moodle suele retornar: id, shortname, fullname, displayname e idnumber.
-        return courses.courses
+        return course_list

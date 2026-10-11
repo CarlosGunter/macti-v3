@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -26,8 +27,6 @@ from app.modules.register.routes import router as register_router
 from app.modules.temp.routes import router as temp_router
 from app.modules.users.routes import router as users_router
 from app.shared import models as _models  # noqa: F401
-
-# PAl logging
 
 
 @asynccontextmanager
@@ -59,9 +58,15 @@ app = FastAPI(
 )
 
 
-# Wrapper compatible con el sistema de tipos de Pyright/FastAPI para RateLimitExceeded
+# Wrapper protegido para RateLimitExceeded (evita errores 500 por desconexión en storage)
 async def rate_limit_handler(request: Request, exc: Exception) -> Response:
-    return _rate_limit_exceeded_handler(request, exc)  # type: ignore[arg-type]
+    if isinstance(exc, RateLimitExceeded):
+        return _rate_limit_exceeded_handler(request, exc)  # type: ignore[arg-type]
+
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Too Many Requests. Límite de peticiones alcanzado."},
+    )
 
 
 # Configuración de Rate Limiting (SlowAPI)

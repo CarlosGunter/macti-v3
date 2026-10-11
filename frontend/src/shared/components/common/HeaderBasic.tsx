@@ -13,7 +13,10 @@ export function HeaderBasic() {
           <MACTILogo className="w-full h-auto" />
         </Link>
         <nav className="text-lg font-medium flex items-center gap-4 md:gap-6">
-          <Link href="/faq" className="hover:text-accent-invert-foreground transition">
+          <Link
+            href="/sobre-macti"
+            className="hover:text-accent-invert-foreground transition"
+          >
             FAQ
           </Link>
           <Link

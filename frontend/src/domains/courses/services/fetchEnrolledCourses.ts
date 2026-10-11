@@ -11,7 +11,7 @@ export async function fetchEnrolledCourses({ institute }: { institute: string })
     `${basePath}/api/proxy/${institute}/courses/enrolled?${queryParams.toString()}`,
     {
       method: "GET",
-      cache: "no-store",
+      next: { revalidate: 500 },
       headers: {
         "Content-Type": "application/json",
       },

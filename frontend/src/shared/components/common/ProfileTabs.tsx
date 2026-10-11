@@ -50,8 +50,16 @@ export default function ProfileTabs({ institute, activeTab }: ProfileTabsProps) 
       <div className="mt-4">
         {activeTab === ProfileTabsMap.EnrolledCourses && (
           <div className="grid gap-4 max-w-6xl mx-auto">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">Cursos Inscritos</h2>
+              <p className="text-foreground/70">
+                Aquí puedes ver todos los cursos en los que estás inscrito.
+              </p>
+            </div>
+
             <ListEnrolledCourses institute={institute} />
-            <div className="md:mx-6">
+
+            <div>
               <div className="flex flex-col gap-3 rounded-2xl shadow-sm sm:flex-row sm:items-center sm:justify-between px-6 py-4 bg-card text-card-foreground w-full ring ring-ring/10">
                 <div className="grid gap-1">
                   <p className="flex items-center gap-2 text-foreground text-lg font-extrabold">

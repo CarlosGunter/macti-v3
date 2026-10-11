@@ -9,5 +9,12 @@ export const enrolledCoursesSchema = z.array(
     summary: z.string().nullable(),
     courseimage: z.url().nullable(),
     role: z.array(z.string()),
+    progress: z.number().nullable(),
+    completed: z
+      .number()
+      .int()
+      .transform((value) => value === 1),
+    startdate: z.number().int(),
+    enddate: z.number().int(),
   }),
 );
