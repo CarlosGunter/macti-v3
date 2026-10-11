@@ -59,20 +59,7 @@ export default function ProfileTabs({ institute, activeTab }: ProfileTabsProps) 
 
             <ListEnrolledCourses institute={institute} />
 
-            <div>
-              <div className="flex flex-col gap-3 rounded-2xl shadow-sm sm:flex-row sm:items-center sm:justify-between px-6 py-4 bg-card text-card-foreground w-full ring ring-ring/10">
-                <div className="grid gap-1">
-                  <p className="flex items-center gap-2 text-foreground text-lg font-extrabold">
-                    <BookPlus className="size-5" aria-hidden="true" />
-                    Solicitar un curso nuevo
-                  </p>
-                  <p className="max-w-prose">
-                    Abre una solicitud de un curso nuevo dentro de tu instituto.
-                  </p>
-                </div>
-                <CreateCourseRequestAutenticatedDialog institute={institute} />
-              </div>
-            </div>
+            <CreateCourseRequestAutenticatedDialog institute={institute} />
           </div>
         )}
         {activeTab === ProfileTabsMap.RequestsCourses && (

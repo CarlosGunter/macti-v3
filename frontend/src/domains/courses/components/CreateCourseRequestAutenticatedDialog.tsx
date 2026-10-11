@@ -1,5 +1,6 @@
 "use client";
 
+import { BookPlus } from "lucide-react";
 import Form from "next/form";
 import { useActionState, useEffect, useState } from "react";
 import ButtonLocal from "@/shared/components/ui/Button";
@@ -26,91 +27,39 @@ import {
   FieldSet,
 } from "@/shared/shadcn/components/ui/field";
 import { Input } from "@/shared/shadcn/components/ui/input";
+import { usePrivilegeStore } from "@/shared/stores/privilegeStore";
 import { createCourseRequestAutenticatedAction } from "../actions/createCourseRequestAutenticatedAction";
 
 interface CreateCourseRequestAutenticatedDialogProps {
   institute: InstitutesType;
 }
 
-function CourseGroupsInput({
-  defaultValue,
-  error,
-}: {
-  defaultValue?: string[];
-  error?: string;
-}) {
-  const [groupName, setGroupName] = useState("");
-  const [groups, setGroups] = useState<string[]>(defaultValue ?? []);
-
-  useEffect(() => {
-    setGroups(defaultValue ?? []);
-  }, [defaultValue]);
-
-  const handleAddGroup = () => {
-    const trimmed = groupName.trim();
-    if (trimmed && !groups.includes(trimmed)) {
-      setGroups([...groups, trimmed]);
-      setGroupName("");
-    }
-  };
-
-  const handleRemoveGroup = (name: string) => {
-    setGroups(groups.filter((group) => group !== name));
-  };
-
-  return (
-    <Field>
-      <FieldLabel>Grupos</FieldLabel>
-      <FieldContent>
-        <div className="flex gap-2">
-          <Input
-            placeholder="Agregar grupo..."
-            value={groupName}
-            onChange={(e) => setGroupName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleAddGroup();
-              }
-            }}
-          />
-          <ButtonLocal
-            type="button"
-            onClick={handleAddGroup}
-            disabled={!groupName.trim()}
-          >
-            Agregar
-          </ButtonLocal>
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          {groups.map((group) => (
-            <Badge key={group} variant="secondary" className="flex items-center gap-1">
-              <input type="hidden" name="groups" value={group} />
-              <span className="ml-1.5">{group}</span>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-5 w-5 p-0"
-                onClick={() => handleRemoveGroup(group)}
-                aria-label={`Eliminar ${group}`}
-              >
-                ×
-              </Button>
-            </Badge>
-          ))}
-        </div>
-
-        <FieldError>{error}</FieldError>
-      </FieldContent>
-    </Field>
-  );
-}
-
 export default function CreateCourseRequestAutenticatedDialog({
   institute,
 }: CreateCourseRequestAutenticatedDialogProps) {
+  const privilegeStore = usePrivilegeStore((state) => state);
+
+  if (privilegeStore.privilegeLevel === "low") {
+    return <div></div>;
+  }
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl shadow-sm sm:flex-row sm:items-center sm:justify-between px-6 py-4 bg-card text-card-foreground w-full ring ring-ring/10">
+      <div className="grid gap-1">
+        <p className="flex items-center gap-2 text-foreground text-lg font-extrabold">
+          <BookPlus className="size-5" aria-hidden="true" />
+          Solicitar un curso nuevo
+        </p>
+        <p className="max-w-prose">
+          Abre una solicitud de un curso nuevo dentro de tu instituto.
+        </p>
+      </div>
+      <CreateDialog institute={institute} />
+    </div>
+  );
+}
+
+function CreateDialog({ institute }: CreateCourseRequestAutenticatedDialogProps) {
   const [open, setOpen] = useState(false);
   const [state, formAction, isPending] = useActionState(
     createCourseRequestAutenticatedAction.bind(null, institute),
@@ -191,5 +140,81 @@ export default function CreateCourseRequestAutenticatedDialog({
         </Form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function CourseGroupsInput({
+  defaultValue,
+  error,
+}: {
+  defaultValue?: string[];
+  error?: string;
+}) {
+  const [groupName, setGroupName] = useState("");
+  const [groups, setGroups] = useState<string[]>(defaultValue ?? []);
+
+  useEffect(() => {
+    setGroups(defaultValue ?? []);
+  }, [defaultValue]);
+
+  const handleAddGroup = () => {
+    const trimmed = groupName.trim();
+    if (trimmed && !groups.includes(trimmed)) {
+      setGroups([...groups, trimmed]);
+      setGroupName("");
+    }
+  };
+
+  const handleRemoveGroup = (name: string) => {
+    setGroups(groups.filter((group) => group !== name));
+  };
+
+  return (
+    <Field>
+      <FieldLabel>Grupos</FieldLabel>
+      <FieldContent>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Agregar grupo..."
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAddGroup();
+              }
+            }}
+          />
+          <ButtonLocal
+            type="button"
+            onClick={handleAddGroup}
+            disabled={!groupName.trim()}
+          >
+            Agregar
+          </ButtonLocal>
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {groups.map((group) => (
+            <Badge key={group} variant="secondary" className="flex items-center gap-1">
+              <input type="hidden" name="groups" value={group} />
+              <span className="ml-1.5">{group}</span>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-5 w-5 p-0"
+                onClick={() => handleRemoveGroup(group)}
+                aria-label={`Eliminar ${group}`}
+              >
+                ×
+              </Button>
+            </Badge>
+          ))}
+        </div>
+
+        <FieldError>{error}</FieldError>
+      </FieldContent>
+    </Field>
   );
 }
