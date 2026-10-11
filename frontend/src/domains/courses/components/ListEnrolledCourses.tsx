@@ -1,11 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import Banner from "@/shared/components/feedback/Banner";
 import { Anchor } from "@/shared/components/ui/Anchor";
 import { type InstitutesType, institutes } from "@/shared/config/institutes";
 import { privilegeRoles } from "@/shared/config/rolesMap";
-import { fetchEnrolledCourses } from "../services/fetchEnrolledCourses";
+import { useEnrolledCourses } from "../hooks/useEnrolledCourses";
 import CourseCard from "./ui/CourseCard";
 
 interface ListEnrolledCoursesProps {
@@ -18,15 +17,7 @@ export default function ListEnrolledCourses({ institute }: ListEnrolledCoursesPr
     data: enrolledCourses,
     isLoading: isEnrolledCoursesLoading,
     error,
-  } = useQuery({
-    queryKey: ["enrolledCourses", institute],
-    queryFn: async () => {
-      return fetchEnrolledCourses({
-        institute,
-      });
-    },
-    enabled: !!institute,
-  });
+  } = useEnrolledCourses({ institute });
 
   if (isEnrolledCoursesLoading) {
     return <Banner message="Cargando cursos inscritos..." />;
