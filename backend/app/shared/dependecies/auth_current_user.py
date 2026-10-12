@@ -9,7 +9,7 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, Query
 from pydantic import Field
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.db.database import get_db
 from app.shared.dependecies.auth_verify import BearerUserInfo, validate_jwt_token
@@ -45,26 +45,53 @@ class IdentityRepository:
 
         return AuthenticationIds(moodle_id=result.moodle_id, auth_id=result.auth_id)
 
+    def get_auth_by_email_and_institute(
+        self, email: str, institute: InstitutesEnum
+    ) -> Auth | None:
+        """Busca una entidad Auth existente por correo e instituto con sus relaciones."""
+        stmt = (
+            select(Auth)
+            .where(
+                Auth.email == email.lower().strip(),
+                Auth.institute == institute,
+            )
+            .options(joinedload(Auth.profile), joinedload(Auth.jids))
+        )
+        return self.db.execute(stmt).scalar_one_or_none()
+
     def create_identity(
         self, user_info: BearerUserInfo, institute: InstitutesEnum, moodle_id: int
     ) -> int:
-        """Crea identidad local completa (Auth + Profile + JIDs) para usuario sincronizado."""
-        # TODO: Cachear errores
-        auth = Auth(email=user_info.email, institute=institute)
-        profile = UserProfile(
-            name=user_info.name,
-            last_name=user_info.last_name,
-            role=AccountRoleEnum.ALUMNO,
-        )
-        jids = JIDs(kc_id=user_info.kc_id, moodle_id=moodle_id)
+        """Crea o vincula la identidad local completa (Auth + Profile + JIDs) para un usuario sincronizado."""
+        try:
+            auth = self.get_auth_by_email_and_institute(user_info.email, institute)
 
-        auth.profile = profile
-        auth.jids = jids
+            if auth is None:
+                auth = Auth(email=user_info.email, institute=institute)
+                self.db.add(auth)
 
-        self.db.add(auth)
-        self.db.commit()
-        self.db.refresh(auth)
-        return auth.id
+            if auth.profile is None:
+                auth.profile = UserProfile(
+                    name=user_info.name,
+                    last_name=user_info.last_name,
+                    role=AccountRoleEnum.ALUMNO,
+                )
+            else:
+                auth.profile.name = user_info.name
+                auth.profile.last_name = user_info.last_name
+
+            if auth.jids is None:
+                auth.jids = JIDs(kc_id=user_info.kc_id, moodle_id=moodle_id)
+            else:
+                auth.jids.kc_id = user_info.kc_id
+                auth.jids.moodle_id = moodle_id
+
+            self.db.commit()
+            self.db.refresh(auth)
+            return auth.id
+        except Exception:
+            self.db.rollback()
+            raise
 
 
 class CurrentUser(BearerUserInfo):
