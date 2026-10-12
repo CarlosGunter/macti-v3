@@ -1,8 +1,13 @@
-import { BookPlus } from "lucide-react";
+import { headers } from "next/headers";
 import Link from "next/link";
 import CreateCourseRequestAutenticatedDialog from "@/domains/courses/components/CreateCourseRequestAutenticatedDialog";
 import ListEnrolledCourses from "@/domains/courses/components/ListEnrolledCourses";
 import ListCourseRequestsTeachers from "@/domains/users/components/ListCourseRequestsTeachers";
+import { checkAndStoreAdminPrivilege } from "@/domains/users/services/checkIsAdmin";
+import { getAuthInstance } from "@/infra/auth/auth-factory";
+import type { InstitutesType } from "@/shared/config/institutes";
+import { selectIsAdmin, usePrivilegeStore } from "@/shared/stores/privilegeStore";
+import { tryCatch } from "@/shared/utils/try-catch";
 
 const ProfileTabsMap = {
   EnrolledCourses: "cursos",
@@ -11,13 +16,43 @@ const ProfileTabsMap = {
 type ProfileTabsType = (typeof ProfileTabsMap)[keyof typeof ProfileTabsMap];
 
 interface ProfileTabsProps {
-  institute: string;
+  institute: InstitutesType;
   activeTab: string | undefined;
 }
 
-export default function ProfileTabs({ institute, activeTab }: ProfileTabsProps) {
-  if (!Object.values(ProfileTabsMap).includes(activeTab as ProfileTabsType)) {
-    activeTab = ProfileTabsMap.EnrolledCourses;
+/**
+ * Componente de servidor que gestiona las pestañas de navegación en el perfil del usuario.
+ *
+ * Sincroniza en el servidor el estado de administrador consultando checkAndStoreAdminPrivilege
+ * con el token de sesión de Keycloak mediante el utilitario `tryCatch`, y restringe la pestaña
+ * de solicitudes únicamente a administradores.
+ *
+ * @param props - Identificador del instituto y la pestaña activa seleccionada.
+ */
+export default async function ProfileTabs({ institute, activeTab }: ProfileTabsProps) {
+  const auth = getAuthInstance(institute);
+  const incomingHeaders = await headers();
+
+  const tokenResult = await tryCatch(
+    auth.api.getAccessToken({
+      headers: incomingHeaders,
+      body: { providerId: "keycloak" },
+    }),
+  );
+
+  const accessToken = tokenResult.data?.accessToken;
+  if (accessToken) {
+    await tryCatch(checkAndStoreAdminPrivilege(institute, accessToken));
+  }
+
+  const isAdmin = selectIsAdmin(usePrivilegeStore.getState());
+
+  let effectiveTab = activeTab;
+  if (!isAdmin && effectiveTab === ProfileTabsMap.RequestsCourses) {
+    effectiveTab = ProfileTabsMap.EnrolledCourses;
+  }
+  if (!Object.values(ProfileTabsMap).includes(effectiveTab as ProfileTabsType)) {
+    effectiveTab = ProfileTabsMap.EnrolledCourses;
   }
 
   return (
@@ -27,28 +62,30 @@ export default function ProfileTabs({ institute, activeTab }: ProfileTabsProps) 
         <Link
           href={`?tab=${ProfileTabsMap.EnrolledCourses}`}
           className={`px-6 py-3 font-semibold text-sm transition-colors ${
-            activeTab === ProfileTabsMap.EnrolledCourses
+            effectiveTab === ProfileTabsMap.EnrolledCourses
               ? "border-b-2 border-accent text-black"
               : "text-gray-500 hover:text-foreground hover:border-b hover:border-gray-500"
           }`}
         >
           Mis cursos
         </Link>
-        <Link
-          href={`?tab=${ProfileTabsMap.RequestsCourses}`}
-          className={`px-6 py-3 font-semibold text-sm transition-colors ${
-            activeTab === ProfileTabsMap.RequestsCourses
-              ? "border-b-2 border-accent text-black"
-              : "text-gray-500 hover:text-foreground hover:border-b hover:border-gray-500"
-          }`}
-        >
-          Solicitudes de cursos
-        </Link>
+        {isAdmin && (
+          <Link
+            href={`?tab=${ProfileTabsMap.RequestsCourses}`}
+            className={`px-6 py-3 font-semibold text-sm transition-colors ${
+              effectiveTab === ProfileTabsMap.RequestsCourses
+                ? "border-b-2 border-accent text-black"
+                : "text-gray-500 hover:text-foreground hover:border-b hover:border-gray-500"
+            }`}
+          >
+            Solicitudes de cursos
+          </Link>
+        )}
       </div>
 
       {/* Tab Content */}
       <div className="mt-4">
-        {activeTab === ProfileTabsMap.EnrolledCourses && (
+        {effectiveTab === ProfileTabsMap.EnrolledCourses && (
           <div className="grid gap-4 max-w-6xl mx-auto">
             <div>
               <h2 className="text-2xl font-bold text-foreground">Cursos Inscritos</h2>
@@ -57,12 +94,12 @@ export default function ProfileTabs({ institute, activeTab }: ProfileTabsProps) 
               </p>
             </div>
 
-            <ListEnrolledCourses institute={institute} />
+            <ListEnrolledCourses institute={institute} isAdmin={isAdmin} />
 
             <CreateCourseRequestAutenticatedDialog institute={institute} />
           </div>
         )}
-        {activeTab === ProfileTabsMap.RequestsCourses && (
+        {isAdmin && effectiveTab === ProfileTabsMap.RequestsCourses && (
           <ListCourseRequestsTeachers institute={institute} />
         )}
       </div>
