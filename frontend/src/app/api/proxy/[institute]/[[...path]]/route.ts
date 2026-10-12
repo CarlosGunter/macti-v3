@@ -1,8 +1,10 @@
 import { toNextJsHandler } from "better-auth/next-js";
 import { headers as NextHeaders } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { checkAndStoreAdminPrivilege } from "@/domains/users/services/checkIsAdmin";
 import { getAuthInstance } from "@/infra/auth/auth-factory";
 import type { InstitutesType } from "@/shared/config/institutes";
+import { usePrivilegeStore } from "@/shared/stores/privilegeStore";
 import { getInstituteUrl } from "@/shared/utils/institute-url";
 import { tryCatch } from "@/shared/utils/try-catch";
 
@@ -46,10 +48,17 @@ async function proxyHandler(req: NextRequest, { params }: RequestParams) {
 
     const session = await getSessionWithAccessToken(auth);
     if (!session) {
+      usePrivilegeStore.getState().reset();
       const redirectUrl = await handleBetterAuthLogin(req, auth, institute);
       if (redirectUrl) return NextResponse.redirect(redirectUrl);
 
       return NextResponse.redirect(instituteRedirectUrl);
+    }
+
+    if (session.session.keycloakToken) {
+      await checkAndStoreAdminPrivilege(institute, session.session.keycloakToken);
+    } else {
+      usePrivilegeStore.getState().reset();
     }
 
     const targetPath = getTargetPath(path);
