@@ -114,12 +114,20 @@ async def clear_user_data(
     # 1. Validación de existencia y obtención de contexto
     user_auth = None
 
+    auth_relations_options = [
+        joinedload(Auth.profile),
+        joinedload(Auth.jids),
+        joinedload(Auth.teacher_course_requests),
+        joinedload(Auth.student_course_requests),
+        joinedload(Auth.verification_token),
+    ]
+
     # Búsqueda por email
     if email:
         email_clean = email.strip().lower()
         query = (
             db.query(Auth)
-            .options(joinedload(Auth.jids))
+            .options(*auth_relations_options)
             .filter(func.lower(Auth.email) == email_clean)
         )
         if institute:
@@ -130,7 +138,7 @@ async def clear_user_data(
     if not user_auth and user_id is not None:
         user_auth = (
             db.query(Auth)
-            .options(joinedload(Auth.jids))
+            .options(*auth_relations_options)
             .filter(Auth.id == user_id)
             .one_or_none()
         )
@@ -145,7 +153,7 @@ async def clear_user_data(
             if student_req:
                 user_auth = (
                     db.query(Auth)
-                    .options(joinedload(Auth.jids))
+                    .options(*auth_relations_options)
                     .filter(Auth.id == student_req.auth_id)
                     .one_or_none()
                 )
@@ -160,7 +168,7 @@ async def clear_user_data(
             if teacher_req:
                 user_auth = (
                     db.query(Auth)
-                    .options(joinedload(Auth.jids))
+                    .options(*auth_relations_options)
                     .filter(Auth.id == teacher_req.auth_id)
                     .one_or_none()
                 )
