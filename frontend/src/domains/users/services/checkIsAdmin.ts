@@ -1,3 +1,5 @@
+import { rolesMap } from "@/shared/config/rolesMap";
+import { usePrivilegeStore } from "@/shared/stores/privilegeStore";
 import { processFetch } from "@/shared/utils/process-fetch";
 import {
   type IsAdminResponse,
@@ -44,6 +46,38 @@ export async function checkIsAdminServer({
   }
 
   return parsed.data;
+}
+
+/**
+ * Consulta el endpoint /users/is-admin del backend para el usuario actual y sincroniza
+ * el resultado en el almacén global de privilegios (usePrivilegeStore).
+ *
+ * @param institute Identificador del instituto al que pertenece la sesión.
+ * @param accessToken Token de acceso Bearer (Keycloak) del usuario autenticado.
+ * @returns true si el usuario es administrador, false en caso contrario.
+ */
+export async function checkAndStoreAdminPrivilege(
+  institute: string,
+  accessToken: string,
+): Promise<boolean> {
+  try {
+    const adminResponse = await checkIsAdminServer({
+      institute,
+      accessToken,
+    });
+
+    if (adminResponse?.is_admin) {
+      usePrivilegeStore.getState().setRole(rolesMap.manager);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error(
+      `[checkAndStoreAdminPrivilege] Error al verificar permisos de administrador para ${institute}:`,
+      error,
+    );
+    return false;
+  }
 }
 
 export interface CheckIsAdminClientParams {

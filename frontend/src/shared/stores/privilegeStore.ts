@@ -1,11 +1,13 @@
 import { create } from "zustand";
 import {
+  checkIsAdminRole,
   getPrivilegeLevelFromRole,
   type PrivilegeLevel,
   type RoleType,
 } from "@/shared/config/rolesMap";
 
 export type { PrivilegeLevel, RoleType };
+export { checkIsAdminRole };
 
 export interface PrivilegeState {
   /**
@@ -86,3 +88,12 @@ export const usePrivilegeStore = create<PrivilegeState>((set) => ({
       roles: [],
     }),
 }));
+
+/**
+ * Selector para verificar si el usuario tiene rol de administrador en el store.
+ *
+ * @param state - Estado actual de privilegios.
+ * @returns true si el usuario posee rol de administrador, false de lo contrario.
+ */
+export const selectIsAdmin = (state: PrivilegeState): boolean =>
+  checkIsAdminRole(state.roles);

@@ -43,3 +43,21 @@ export function getPrivilegeLevelFromRole(
 
   return null;
 }
+
+/**
+ * Determina si un rol o conjunto de roles corresponde a un administrador ("manager" o "admin").
+ *
+ * @param role - Rol individual o arreglo de roles a verificar.
+ * @returns true si alguno de los roles es de administrador, false en caso contrario.
+ */
+export function checkIsAdminRole(
+  role: string | readonly string[] | null | undefined,
+): boolean {
+  if (!role) return false;
+
+  const roles = Array.isArray(role) ? role : [role];
+  return roles.some((r) => {
+    const clean = r.toLowerCase().trim();
+    return clean === rolesMap.manager;
+  });
+}
