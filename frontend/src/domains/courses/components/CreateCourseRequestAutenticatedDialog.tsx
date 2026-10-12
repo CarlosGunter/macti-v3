@@ -39,7 +39,7 @@ export default function CreateCourseRequestAutenticatedDialog({
 }: CreateCourseRequestAutenticatedDialogProps) {
   const privilegeStore = usePrivilegeStore((state) => state);
 
-  if (privilegeStore.privilegeLevel === "low") {
+  if (!privilegeStore.privilegeLevel || privilegeStore.privilegeLevel === "low") {
     return <div></div>;
   }
 
