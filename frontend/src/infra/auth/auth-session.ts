@@ -1,3 +1,4 @@
+import { usePrivilegeStore } from "@/shared/stores/privilegeStore";
 import type { InstitutesType } from "../../shared/config/institutes";
 import { keycloakConfigs } from "../../shared/config/kcConfig";
 import { getAuthClient } from "./auth-client";
@@ -11,6 +12,7 @@ export async function signOutFederatedSession({
   institute,
   redirectPath,
 }: SignOutFederatedSessionParams) {
+  usePrivilegeStore.getState().reset();
   const authClient = getAuthClient(institute);
   await authClient.signOut();
 

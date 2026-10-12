@@ -30,6 +30,8 @@ interface ProfileTabsProps {
  * @param props - Identificador del instituto y la pestaña activa seleccionada.
  */
 export default async function ProfileTabs({ institute, activeTab }: ProfileTabsProps) {
+  usePrivilegeStore.getState().reset();
+
   const auth = getAuthInstance(institute);
   const incomingHeaders = await headers();
 

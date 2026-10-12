@@ -1,10 +1,9 @@
 import { toNextJsHandler } from "better-auth/next-js";
 import { headers as NextHeaders } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { checkIsAdminServer } from "@/domains/users/services/checkIsAdmin";
+import { checkAndStoreAdminPrivilege } from "@/domains/users/services/checkIsAdmin";
 import { getAuthInstance } from "@/infra/auth/auth-factory";
 import type { InstitutesType } from "@/shared/config/institutes";
-import { rolesMap } from "@/shared/config/rolesMap";
 import { usePrivilegeStore } from "@/shared/stores/privilegeStore";
 import { getInstituteUrl } from "@/shared/utils/institute-url";
 import { tryCatch } from "@/shared/utils/try-catch";
@@ -49,6 +48,7 @@ async function proxyHandler(req: NextRequest, { params }: RequestParams) {
 
     const session = await getSessionWithAccessToken(auth);
     if (!session) {
+      usePrivilegeStore.getState().reset();
       const redirectUrl = await handleBetterAuthLogin(req, auth, institute);
       if (redirectUrl) return NextResponse.redirect(redirectUrl);
 
@@ -57,6 +57,8 @@ async function proxyHandler(req: NextRequest, { params }: RequestParams) {
 
     if (session.session.keycloakToken) {
       await checkAndStoreAdminPrivilege(institute, session.session.keycloakToken);
+    } else {
+      usePrivilegeStore.getState().reset();
     }
 
     const targetPath = getTargetPath(path);
@@ -189,34 +191,6 @@ async function getSessionWithAccessToken(auth: AuthInstance) {
       error,
     );
     return null;
-  }
-}
-
-/**
- * Consulta el endpoint /users/is-admin del backend para el usuario actual y sincroniza
- * el resultado en el almacén global de privilegios (usePrivilegeStore).
- *
- * @param institute Identificador del instituto al que pertenece la sesión.
- * @param accessToken Token de acceso Bearer (Keycloak) del usuario autenticado.
- */
-async function checkAndStoreAdminPrivilege(
-  institute: InstitutesType,
-  accessToken: string,
-) {
-  try {
-    const adminResponse = await checkIsAdminServer({
-      institute,
-      accessToken,
-    });
-
-    if (adminResponse?.is_admin) {
-      usePrivilegeStore.getState().setRole(rolesMap.manager);
-    }
-  } catch (error) {
-    console.error(
-      `[checkAndStoreAdminPrivilege] Error al verificar permisos de administrador para ${institute}:`,
-      error,
-    );
   }
 }
 

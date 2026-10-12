@@ -70,12 +70,15 @@ export async function checkAndStoreAdminPrivilege(
       usePrivilegeStore.getState().setRole(rolesMap.manager);
       return true;
     }
+
+    usePrivilegeStore.getState().reset();
     return false;
   } catch (error) {
     console.error(
       `[checkAndStoreAdminPrivilege] Error al verificar permisos de administrador para ${institute}:`,
       error,
     );
+    usePrivilegeStore.getState().reset();
     return false;
   }
 }

@@ -38,6 +38,12 @@ export default function ListEnrolledCourses({
   useEffect(() => {
     if (isAdmin) {
       addRoles([rolesMap.manager]);
+    } else {
+      const currentRoles = usePrivilegeStore.getState().roles;
+      if (currentRoles.includes(rolesMap.manager)) {
+        const filteredRoles = currentRoles.filter((r) => r !== rolesMap.manager);
+        usePrivilegeStore.getState().setRoles(filteredRoles);
+      }
     }
   }, [isAdmin, addRoles]);
 
