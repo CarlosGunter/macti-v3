@@ -1,3 +1,4 @@
+# app/shared/schemas/pagination.py
 """
 Módulo de Paginación Compartida - Proyecto MACTI
 
@@ -7,12 +8,13 @@ en los endpoints que manejan catálogos o listados extensos.
 
 import math
 from typing import Generic, TypeVar
+
 from pydantic import BaseModel, Field
 
 T = TypeVar("T")
 
 
-class PaginatedResponse(BaseModel, Generic[T]):
+class PaginatedResponse(BaseModel, Generic[T]):  # noqa: UP046
     """
     Estructura genérica de respuesta paginada.
 

@@ -147,7 +147,9 @@ async def list_accounts_requests(
         None, description="Estatus de las solicitudes a filtrar"
     ),
     page: int = Query(1, ge=1, description="Número de página a consultar"),
-    limit: int = Query(10, ge=1, le=100, description="Cantidad de registros por página"),
+    limit: int = Query(
+        10, ge=1, le=100, description="Cantidad de registros por página"
+    ),
 ):
     return await ListAccountRequestsController.list_accounts_requests(
         db=db,
@@ -173,7 +175,9 @@ async def list_teacher_accounts_requests(
         None, description="Estatus de las solicitudes a filtrar"
     ),
     page: int = Query(1, ge=1, description="Número de página a consultar"),
-    limit: int = Query(10, ge=1, le=100, description="Cantidad de registros por página"),
+    limit: int = Query(
+        10, ge=1, le=100, description="Cantidad de registros por página"
+    ),
 ):
     return await AccountRequestsTeacherController.list_teacher_accounts_requests(
         institute=institute,

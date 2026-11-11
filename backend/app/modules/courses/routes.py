@@ -103,7 +103,12 @@ async def list_user_enrolled_courses(
         event="consulta_cursos_inscritos",
         user_id=getattr(user_info, "id", None),
         ip=client_ip,
-        extra={"institute": institute.value, "search": search, "page": page, "limit": limit},
+        extra={
+            "institute": institute.value,
+            "search": search,
+            "page": page,
+            "limit": limit,
+        },
     )
 
     return await UserEnrolledCoursesController.get_user_enrolled_courses(

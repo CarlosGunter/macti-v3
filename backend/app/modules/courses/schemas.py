@@ -46,4 +46,6 @@ class UserEnrolledCoursesResponseSchema(CourseResponseSchema):
 
 # Definición de tipos para respuestas paginadas
 PaginatedCoursesResponse = PaginatedResponse[CourseResponseSchema]
-PaginatedUserEnrolledCoursesResponse = PaginatedResponse[UserEnrolledCoursesResponseSchema]
+PaginatedUserEnrolledCoursesResponse = PaginatedResponse[
+    UserEnrolledCoursesResponseSchema
+]
