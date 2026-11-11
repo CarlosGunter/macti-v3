@@ -7,6 +7,7 @@
 
 import asyncio
 from typing import Any
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
@@ -140,14 +141,15 @@ class UserEnrolledCoursesController:
 
     @classmethod
     async def _add_role_to_courses(
-        cls, institute: InstitutesEnum, courses: list, user_id: int
-    ) -> list:
+        cls, institute: InstitutesEnum, courses: list[Any], user_id: int
+    ) -> list[Any]:
         """
         Inyecta el 'shortname' del rol de Moodle en la estructura de cada curso.
 
         Realiza peticiones concurrentes (asyncio.gather) para evitar el problema de N+1
         y mantener la latencia al mínimo sin alterar la estructura esperada por el cliente.
         """
+
         async def _fetch_single_course_role(course: Any) -> None:
             raw_id = (
                 course.get("id")
@@ -160,11 +162,13 @@ class UserEnrolledCoursesController:
             except (ValueError, TypeError):
                 course_id = None
 
+            course_item: Any = course
+
             if course_id is None:
                 if isinstance(course, dict):
                     course["role"] = ["student"]
                 else:
-                    setattr(course, "role", ["student"])
+                    course_item.role = ["student"]
                 return
 
             try:
@@ -187,12 +191,12 @@ class UserEnrolledCoursesController:
                 if isinstance(course, dict):
                     course["role"] = roles
                 else:
-                    setattr(course, "role", roles)
+                    course_item.role = roles
             except Exception:
                 if isinstance(course, dict):
                     course["role"] = ["student"]
                 else:
-                    setattr(course, "role", ["student"])
+                    course_item.role = ["student"]
 
         if courses:
             await asyncio.gather(*[_fetch_single_course_role(c) for c in courses])
