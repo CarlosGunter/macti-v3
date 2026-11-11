@@ -5,6 +5,9 @@
 # servir de puente entre la identidad de Keycloak (kc_id) y el ecosistema de
 # Moodle, añadiendo metadatos de roles por cada curso obtenido.
 
+import asyncio
+from typing import Any
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
@@ -58,7 +61,7 @@ class UserEnrolledCoursesController:
         if search and search.strip():
             query = search.strip().lower()
 
-            def match_course(c) -> bool:
+            def match_course(c: Any) -> bool:
                 fn = getattr(c, "fullname", None) or (
                     c.get("fullname") if isinstance(c, dict) else ""
                 )
@@ -138,15 +141,16 @@ class UserEnrolledCoursesController:
 
     @classmethod
     async def _add_role_to_courses(
-        cls, institute: InstitutesEnum, courses: list, user_id: int
-    ) -> list:
+        cls, institute: InstitutesEnum, courses: list[Any], user_id: int
+    ) -> list[Any]:
         """
         Inyecta el 'shortname' del rol de Moodle en la estructura de cada curso.
 
-        Realiza una petición por cada curso para obtener el perfil del usuario
-        dentro de ese contexto académico. Si falla, asigna por defecto el rol 'student'.
+        Realiza peticiones concurrentes (asyncio.gather) para evitar el problema de N+1
+        y mantener la latencia al mínimo sin alterar la estructura esperada por el cliente.
         """
-        for course in courses:
+
+        async def _fetch_single_course_role(course: Any) -> None:
             raw_id = (
                 course.get("id")
                 if isinstance(course, dict)
@@ -158,12 +162,14 @@ class UserEnrolledCoursesController:
             except (ValueError, TypeError):
                 course_id = None
 
+            course_item: Any = course
+
             if course_id is None:
                 if isinstance(course, dict):
                     course["role"] = ["student"]
                 else:
-                    course.role = ["student"]
-                continue
+                    course_item.role = ["student"]
+                return
 
             try:
                 get_user_profile = await SharedMoodleService.get_user_profile(
@@ -175,24 +181,25 @@ class UserEnrolledCoursesController:
                     or not get_user_profile.user_profile
                     or not get_user_profile.user_profile.get("roles")
                 ):
-                    if isinstance(course, dict):
-                        course["role"] = ["student"]
-                    else:
-                        course.role = ["student"]
+                    roles = ["student"]
                 else:
                     roles = [
                         role["shortname"]
                         for role in get_user_profile.user_profile["roles"]
                     ]
-                    if isinstance(course, dict):
-                        course["role"] = roles
-                    else:
-                        course.role = roles
+
+                if isinstance(course, dict):
+                    course["role"] = roles
+                else:
+                    course_item.role = roles
             except Exception:
                 if isinstance(course, dict):
                     course["role"] = ["student"]
                 else:
-                    course.role = ["student"]
+                    course_item.role = ["student"]
+
+        if courses:
+            await asyncio.gather(*[_fetch_single_course_role(c) for c in courses])
 
         return courses
 

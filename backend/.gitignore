@@ -123,3 +123,4 @@ tree.txt
 test_moodle_logs.py
 test_slowapi_moodle.py
 test_timeout_moodle.py
+test_user_enrolled_courses.py
