@@ -34,8 +34,8 @@ from app.modules.register.schemas import (
     AuthenticatedTeacherRequestSchema,
     CreateAccountResponse,
     CreateAccountSchema,
-    ListAccountsResponse,
-    ListTeacherAccountsResponse,
+    PaginatedAccountsResponse,
+    PaginatedTeacherAccountsResponse,
     RequestStatusUpdateResponseSchema,
     RequestStatusUpdateSchema,
     StudentRequestSchema,
@@ -136,7 +136,7 @@ async def request_authenticated_teacher_account(
 @router.get(
     "/list-account-requests/students",
     summary="Listar solicitudes de cuenta de alumnos por curso",
-    response_model=ListAccountsResponse,
+    response_model=PaginatedAccountsResponse,
 )
 async def list_accounts_requests(
     db: Annotated[Session, Depends(get_db)],
@@ -146,12 +146,18 @@ async def list_accounts_requests(
     status: RequestStatusEnum | None = Query(
         None, description="Estatus de las solicitudes a filtrar"
     ),
+    page: int = Query(1, ge=1, description="Número de página a consultar"),
+    limit: int = Query(
+        10, ge=1, le=100, description="Cantidad de registros por página"
+    ),
 ):
     return await ListAccountRequestsController.list_accounts_requests(
         db=db,
         course_id=course_id,
         institute=institute,
         status=status,
+        page=page,
+        limit=limit,
     )
 
 
@@ -159,7 +165,7 @@ async def list_accounts_requests(
     "/list-account-requests/teachers",
     summary="Listar solicitudes de cuenta de docentes",
     description="Endpoint para listar solicitudes de cuenta de docentes. Solo accesible para roles de gestión.",
-    response_model=ListTeacherAccountsResponse,
+    response_model=PaginatedTeacherAccountsResponse,
 )
 async def list_teacher_accounts_requests(
     db: Annotated[Session, Depends(get_db)],
@@ -168,10 +174,16 @@ async def list_teacher_accounts_requests(
     status: RequestStatusEnum | None = Query(
         None, description="Estatus de las solicitudes a filtrar"
     ),
+    page: int = Query(1, ge=1, description="Número de página a consultar"),
+    limit: int = Query(
+        10, ge=1, le=100, description="Cantidad de registros por página"
+    ),
 ):
     return await AccountRequestsTeacherController.list_teacher_accounts_requests(
         institute=institute,
         status=status,
+        page=page,
+        limit=limit,
         db=db,
     )
 

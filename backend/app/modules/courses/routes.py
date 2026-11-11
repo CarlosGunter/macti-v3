@@ -16,8 +16,8 @@ from app.modules.courses.controllers.user_enrolled_courses import (
     UserEnrolledCoursesController,
 )
 from app.modules.courses.schemas import (
-    CourseResponseSchema,
-    UserEnrolledCoursesResponseSchema,
+    PaginatedCoursesResponse,
+    PaginatedUserEnrolledCoursesResponse,
 )
 from app.shared.dependecies.auth_current_user import CurrentUser, get_current_user
 from app.shared.enums.institutes_enum import InstitutesEnum
@@ -31,7 +31,7 @@ LOGGER_NAME = __name__
 @router.get(
     "/",
     summary="Listar cursos de Moodle para un instituto específico",
-    response_model=list[CourseResponseSchema],
+    response_model=PaginatedCoursesResponse,
 )
 @limiter.limit("30/minute")
 async def list_courses(
@@ -44,9 +44,11 @@ async def list_courses(
         None,
         description="Término de búsqueda para filtrar por nombre o clave del curso",
     ),
-) -> list[CourseResponseSchema]:
+    page: int = Query(1, ge=1, description="Número de página a consultar"),
+    limit: int = Query(10, ge=1, le=100, description="Cantidad de cursos por página"),
+) -> PaginatedCoursesResponse:
     """
-    Endpoint público/administrativo para obtener el catálogo completo de Moodle.
+    Endpoint público/administrativo para obtener el catálogo completo de Moodle paginado.
 
     Permite conocer la oferta académica disponible en una instancia específica
     antes de realizar procesos de inscripción.
@@ -59,19 +61,21 @@ async def list_courses(
             "institute": institute.value,
             "filter_ids": ids,
             "search": search,
+            "page": page,
+            "limit": limit,
             "client_ip": client_ip,
         },
     )
 
     return await ListCoursesController.list_courses(
-        institute=institute, ids=ids, search=search
+        institute=institute, ids=ids, search=search, page=page, limit=limit
     )
 
 
 @router.get(
     "/enrolled",
     summary="Listar cursos en los que un usuario está inscrito",
-    response_model=list[UserEnrolledCoursesResponseSchema],
+    response_model=PaginatedUserEnrolledCoursesResponse,
 )
 @limiter.limit("20/minute")
 async def list_user_enrolled_courses(
@@ -81,11 +85,13 @@ async def list_user_enrolled_courses(
         None,
         description="Término de búsqueda para filtrar por nombre o clave del curso",
     ),
+    page: int = Query(1, ge=1, description="Número de página a consultar"),
+    limit: int = Query(10, ge=1, le=100, description="Cantidad de cursos por página"),
     user_info: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> list[UserEnrolledCoursesResponseSchema]:
+) -> PaginatedUserEnrolledCoursesResponse:
     """
-    Endpoint privado para obtener la 'Mochila Digital' del usuario.
+    Endpoint privado para obtener la 'Mochila Digital' del usuario de forma paginada.
 
     Requiere un Bearer Token válido. El sistema extrae la identidad del usuario
     del token, resuelve su vinculación con Moodle y retorna sus cursos con
@@ -97,9 +103,19 @@ async def list_user_enrolled_courses(
         event="consulta_cursos_inscritos",
         user_id=getattr(user_info, "id", None),
         ip=client_ip,
-        extra={"institute": institute.value, "search": search},
+        extra={
+            "institute": institute.value,
+            "search": search,
+            "page": page,
+            "limit": limit,
+        },
     )
 
     return await UserEnrolledCoursesController.get_user_enrolled_courses(
-        institute=institute, user_info=user_info, db=db, search=search
+        institute=institute,
+        user_info=user_info,
+        db=db,
+        search=search,
+        page=page,
+        limit=limit,
     )

@@ -9,6 +9,7 @@ from app.modules.register.repositories.list_account_requests_teacher_repository 
 )
 from app.shared.enums.institutes_enum import InstitutesEnum
 from app.shared.enums.status_enum import RequestStatusEnum
+from app.shared.schemas.pagination import PaginatedResponse
 
 
 class AccountRequestsTeacherController:
@@ -19,28 +20,42 @@ class AccountRequestsTeacherController:
         db: Session,
         institute: InstitutesEnum,
         status: RequestStatusEnum | None = None,
-    ) -> list[dict[str, object]]:
-        """Obtiene la lista de solicitudes de docentes visibles para un administrador."""
+        page: int = 1,
+        limit: int = 10,
+    ) -> PaginatedResponse:
+        """Obtiene la lista paginada de solicitudes de docentes visibles para un administrador."""
 
         repository = ListTeacherAccountRequestsRepository(db)
 
-        rows = AccountRequestsTeacherController._get_teacher_requests_or_raise(
+        rows, total = AccountRequestsTeacherController._get_teacher_requests_or_raise(
             repository=repository,
             institute=institute,
             status=status,
+            page=page,
+            limit=limit,
         )
-        return AccountRequestsTeacherController._build_response(rows)
+        built_items = AccountRequestsTeacherController._build_response(rows)
+        return PaginatedResponse.create(
+            items=built_items,
+            total=total,
+            page=page,
+            limit=limit,
+        )
 
     @staticmethod
     def _get_teacher_requests_or_raise(
         repository: ListTeacherAccountRequestsRepository,
         institute: InstitutesEnum,
         status: RequestStatusEnum | None,
-    ) -> list[dict[str, Any]]:
-        """Obtiene las solicitudes docentes desde el repositorio."""
+        page: int,
+        limit: int,
+    ) -> tuple[list[dict[str, Any]], int]:
+        """Obtiene las solicitudes docentes paginadas desde el repositorio."""
         return repository.list_teacher_account_requests(
             institute=institute,
             status=status,
+            page=page,
+            limit=limit,
         )
 
     @staticmethod

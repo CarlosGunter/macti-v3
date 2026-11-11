@@ -10,6 +10,7 @@ from fastapi import HTTPException
 from app.core.logging.macti_logger import log_macti_error
 from app.modules.courses.services.moodle_service import MoodleService
 from app.shared.enums.institutes_enum import InstitutesEnum
+from app.shared.schemas.pagination import PaginatedResponse
 
 
 class ListCoursesController:
@@ -23,14 +24,17 @@ class ListCoursesController:
         institute: InstitutesEnum,
         ids: list[int] | None = None,
         search: str | None = None,
-    ) -> list:
+        page: int = 1,
+        limit: int = 10,
+    ) -> PaginatedResponse:
         """
-        Lista todos los cursos disponibles en la plataforma Moodle para un instituto específico.
+        Lista todos los cursos disponibles en la plataforma Moodle para un instituto específico con paginación.
 
         Proceso:
         1. Invoca al servicio MoodleService para realizar una petición asíncrona.
         2. Valida la respuesta del Web Service de Moodle.
-        3. En caso de éxito, retorna una lista de objetos de curso (id, fullname, shortname, etc.).
+        3. Aplica filtro de búsqueda si fue especificado.
+        4. Calcula la ventana de paginación solicitada (page, limit) y retorna PaginatedResponse.
 
         Errores:
             Lanza una excepción 502 (Bad Gateway) si la comunicación con Moodle falla
@@ -92,6 +96,15 @@ class ListCoursesController:
 
             course_list = [c for c in course_list if match_course(c)]
 
-        # Retorna el listado de cursos directamente.
-        # Moodle suele retornar: id, shortname, fullname, displayname e idnumber.
-        return course_list
+        # Cálculo de paginación
+        total = len(course_list)
+        start = (page - 1) * limit
+        end = start + limit
+        paginated_items = course_list[start:end]
+
+        return PaginatedResponse.create(
+            items=paginated_items,
+            total=total,
+            page=page,
+            limit=limit,
+        )

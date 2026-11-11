@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from sqlalchemy import case, select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.selectable import Select
@@ -27,30 +27,46 @@ class ListAccountRequestsRepository:
         course_id: int,
         institute: InstitutesEnum,
         status: RequestStatusEnum | None = None,
-    ) -> list[dict[str, Any]]:
-        """Retorna las solicitudes de alumnos visibles para el usuario actual."""
-        stmt = self._build_statement(
-            course_id=course_id,
-            institute=institute,
-            status=status,
-        )
-
-        rows = self.db.execute(stmt).mappings().all()
-        return [dict(row) for row in rows]
-
-    def _build_statement(
-        self,
-        course_id: int,
-        institute: InstitutesEnum,
-        status: RequestStatusEnum | None,
-    ) -> Select[tuple[int, int, str, str, str, RequestStatusEnum, AccountRoleEnum]]:
-        """Construye la consulta para listar solicitudes de alumnos."""
-        status_order = self._build_status_order()
+        page: int = 1,
+        limit: int = 10,
+    ) -> tuple[list[dict[str, Any]], int]:
+        """
+        Retorna las solicitudes de alumnos paginadas junto con el total de registros encontrados.
+        """
         filters = self._build_filters(
             course_id=course_id,
             institute=institute,
             status=status,
         )
+
+        # 1. Conteo total con los filtros aplicados
+        count_stmt = (
+            select(func.count(StudentCourseRequest.id))
+            .join(Auth, StudentCourseRequest.auth_id == Auth.id)
+            .join(UserProfile, UserProfile.auth_id == Auth.id)
+            .where(*filters)
+        )
+        total = self.db.execute(count_stmt).scalar() or 0
+
+        # 2. Consulta paginada con offset y limit
+        stmt = self._build_statement(
+            filters=filters,
+            page=page,
+            limit=limit,
+        )
+
+        rows = self.db.execute(stmt).mappings().all()
+        return [dict(row) for row in rows], total
+
+    def _build_statement(
+        self,
+        filters: list[ColumnElement[bool]],
+        page: int,
+        limit: int,
+    ) -> Select[tuple[int, int, str, str, str, RequestStatusEnum, AccountRoleEnum]]:
+        """Construye la consulta con ordenamiento y paginación para solicitudes de alumnos."""
+        status_order = self._build_status_order()
+        offset = (page - 1) * limit
 
         return (
             select(
@@ -65,7 +81,9 @@ class ListAccountRequestsRepository:
             .join(Auth, StudentCourseRequest.auth_id == Auth.id)
             .join(UserProfile, UserProfile.auth_id == Auth.id)
             .where(*filters)
-            .order_by(status_order, StudentCourseRequest.status)
+            .order_by(status_order, StudentCourseRequest.id.desc())
+            .offset(offset)
+            .limit(limit)
         )
 
     @staticmethod

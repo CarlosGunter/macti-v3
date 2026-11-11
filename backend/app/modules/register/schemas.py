@@ -5,6 +5,7 @@ from pydantic import UUID4, BaseModel, ConfigDict, EmailStr, Field, field_valida
 from app.shared.enums.institutes_enum import InstitutesEnum
 from app.shared.enums.role_enum import AccountRoleEnum
 from app.shared.enums.status_enum import RequestStatusEnum
+from app.shared.schemas.pagination import PaginatedResponse
 
 
 class AccountBaseSchema(BaseModel):
@@ -233,3 +234,8 @@ class UserInfoResponse(BaseModel):
     institute: InstitutesEnum
     course_request: CourseRequestInfo
     model_config = ConfigDict(from_attributes=True)
+
+
+# Respuestas paginadas para las solicitudes
+PaginatedAccountsResponse = PaginatedResponse[AccountsResponse]
+PaginatedTeacherAccountsResponse = PaginatedResponse[TeacherRequestAccountResponse]

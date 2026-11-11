@@ -7,6 +7,8 @@
 
 from pydantic import BaseModel
 
+from app.shared.schemas.pagination import PaginatedResponse
+
 
 class CourseResponseSchema(BaseModel):
     """
@@ -40,3 +42,10 @@ class UserEnrolledCoursesResponseSchema(CourseResponseSchema):
     completed: int | None = None  # Número de actividades completadas
     startdate: int | None = None  # Timestamp de inicio del curso
     enddate: int | None = None  # Timestamp de finalización del curso
+
+
+# Definición de tipos para respuestas paginadas
+PaginatedCoursesResponse = PaginatedResponse[CourseResponseSchema]
+PaginatedUserEnrolledCoursesResponse = PaginatedResponse[
+    UserEnrolledCoursesResponseSchema
+]

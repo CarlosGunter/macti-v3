@@ -8,6 +8,7 @@ from app.modules.register.repositories.list_account_requests_repository import (
 )
 from app.shared.enums.institutes_enum import InstitutesEnum
 from app.shared.enums.status_enum import RequestStatusEnum
+from app.shared.schemas.pagination import PaginatedResponse
 
 
 class ListAccountRequestsController:
@@ -22,27 +23,39 @@ class ListAccountRequestsController:
         course_id: int,
         institute: InstitutesEnum,
         status: RequestStatusEnum | None = None,
-    ) -> list[dict[str, object]]:
+        page: int = 1,
+        limit: int = 10,
+    ) -> PaginatedResponse:
         """
-        Obtiene solicitudes de cuenta filtradas por curso, instituto y estado.
+        Obtiene solicitudes de cuenta paginadas y filtradas por curso, instituto y estado.
 
         Args:
             db: Sesión de base de datos.
             course_id: Identificador del curso en Moodle.
             institute: Instituto al que pertenece la solicitud.
-            user_info: Datos del usuario autenticado.
             status: Filtro opcional por estatus.
+            page: Número de página.
+            limit: Límite por página.
 
         Returns:
-            Lista de solicitudes visibles para el usuario.
+            PaginatedResponse: Lista paginada con metadatos de conteo.
         """
         repository = ListAccountRequestsRepository(db)
 
-        return ListAccountRequestsController._list_account_requests_or_raise(
+        items, total = ListAccountRequestsController._list_account_requests_or_raise(
             repository=repository,
             course_id=course_id,
             institute=institute,
             status=status,
+            page=page,
+            limit=limit,
+        )
+
+        return PaginatedResponse.create(
+            items=items,
+            total=total,
+            page=page,
+            limit=limit,
         )
 
     @staticmethod
@@ -51,13 +64,17 @@ class ListAccountRequestsController:
         course_id: int,
         institute: InstitutesEnum,
         status: RequestStatusEnum | None,
-    ) -> list[dict[str, object]]:
-        """Delega al repositorio la consulta de solicitudes visibles."""
+        page: int,
+        limit: int,
+    ) -> tuple[list[dict[str, object]], int]:
+        """Delega al repositorio la consulta de solicitudes visibles con paginación."""
         try:
             return repository.list_student_account_requests(
                 course_id=course_id,
                 institute=institute,
                 status=status,
+                page=page,
+                limit=limit,
             )
         except Exception as exc:
             raise HTTPException(

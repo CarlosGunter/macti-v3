@@ -14,6 +14,7 @@ from app.modules.courses.repositories.user_enrolled_courses_repository import (
 from app.modules.courses.services.moodle_service import MoodleService
 from app.shared.dependecies.auth_current_user import CurrentUser
 from app.shared.enums.institutes_enum import InstitutesEnum
+from app.shared.schemas.pagination import PaginatedResponse
 from app.shared.services.moodle_service import MoodleService as SharedMoodleService
 
 
@@ -29,15 +30,18 @@ class UserEnrolledCoursesController:
         user_info: CurrentUser,
         db: Session,
         search: str | None = None,
-    ) -> list:
+        page: int = 1,
+        limit: int = 10,
+    ) -> PaginatedResponse:
         """
-        Obtiene todos los cursos donde el usuario está inscrito en un instituto dado.
+        Obtiene todos los cursos donde el usuario está inscrito en un instituto dado de forma paginada.
 
         Flujo de ejecución:
         1. Resuelve el moodle_id local mediante el kc_id del token.
         2. Consulta a la API de Moodle los cursos inscritos.
         3. Filtra la lista por el término de búsqueda si se proporcionó.
-        4. Inyección de roles específicos por curso únicamente a los cursos filtrados.
+        4. Realiza el corte de paginación (page, limit).
+        5. Inyección de roles específicos por curso únicamente a los cursos de la página activa.
         """
         # 1. Obtención de identidad cruzada (Keycloak ID -> Moodle ID)
         repo = UserEnrolledCoursesRepository(db)
@@ -72,12 +76,23 @@ class UserEnrolledCoursesController:
 
             enrolled_courses = [c for c in enrolled_courses if match_course(c)]
 
-        # 4. Inyección de roles específicos por curso
+        # 4. Cálculo de ventana de paginación
+        total = len(enrolled_courses)
+        start = (page - 1) * limit
+        end = start + limit
+        paginated_courses = enrolled_courses[start:end]
+
+        # 5. Inyección de roles específicos por curso (únicamente para la página activa)
         enriched = await UserEnrolledCoursesController._add_role_to_courses(
-            institute=institute, courses=enrolled_courses, user_id=user_id
+            institute=institute, courses=paginated_courses, user_id=user_id
         )
 
-        return enriched
+        return PaginatedResponse.create(
+            items=enriched,
+            total=total,
+            page=page,
+            limit=limit,
+        )
 
     @classmethod
     async def _resolve_moodle_id(
