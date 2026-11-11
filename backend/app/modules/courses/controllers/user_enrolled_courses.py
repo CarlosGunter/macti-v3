@@ -1,10 +1,4 @@
-# Módulo UserEnrolledCoursesController - Gestión de Dashboard Académico
-#
-# Este controlador es responsable de recuperar y enriquecer la lista de cursos
-# en los que un usuario está matriculado activamente. Su función principal es
-# servir de puente entre la identidad de Keycloak (kc_id) y el ecosistema de
-# Moodle, añadiendo metadatos de roles por cada curso obtenido.
-
+import asyncio
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
@@ -35,26 +29,16 @@ class UserEnrolledCoursesController:
     ) -> PaginatedResponse:
         """
         Obtiene todos los cursos donde el usuario está inscrito en un instituto dado de forma paginada.
-
-        Flujo de ejecución:
-        1. Resuelve el moodle_id local mediante el kc_id del token.
-        2. Consulta a la API de Moodle los cursos inscritos.
-        3. Filtra la lista por el término de búsqueda si se proporcionó.
-        4. Realiza el corte de paginación (page, limit).
-        5. Inyección de roles específicos por curso únicamente a los cursos de la página activa.
         """
-        # 1. Obtención de identidad cruzada (Keycloak ID -> Moodle ID)
         repo = UserEnrolledCoursesRepository(db)
         user_id = await UserEnrolledCoursesController._resolve_moodle_id(
             repo, user_info
         )
 
-        # 2. Consulta de cursos en el LMS
         enrolled_courses = await UserEnrolledCoursesController._fetch_enrolled_courses(
             institute, user_id
         )
 
-        # 3. Filtrado tipo LIKE (insensible a mayúsculas/minúsculas)
         if search and search.strip():
             query = search.strip().lower()
 
@@ -76,13 +60,12 @@ class UserEnrolledCoursesController:
 
             enrolled_courses = [c for c in enrolled_courses if match_course(c)]
 
-        # 4. Cálculo de ventana de paginación
         total = len(enrolled_courses)
         start = (page - 1) * limit
         end = start + limit
         paginated_courses = enrolled_courses[start:end]
 
-        # 5. Inyección de roles específicos por curso (únicamente para la página activa)
+        # Enriquecimiento en paralelo de roles para la página actual
         enriched = await UserEnrolledCoursesController._add_role_to_courses(
             institute=institute, courses=paginated_courses, user_id=user_id
         )
@@ -98,11 +81,7 @@ class UserEnrolledCoursesController:
     async def _resolve_moodle_id(
         cls, repo: UserEnrolledCoursesRepository, user_info: CurrentUser
     ) -> int:
-        """Resuelve el `moodle_id` local a partir del `kc_id` del request.
-
-        Usa el repositorio para obtener todas las filas asociadas y gestiona
-        los casos: 0 resultados, múltiples resultados o resultado sin `moodle_id`.
-        """
+        """Resuelve el `moodle_id` local a partir del `kc_id` del request."""
         kc_id = user_info.kc_id
 
         matches = repo.get_jids_by_kc_id(kc_id)
@@ -143,10 +122,10 @@ class UserEnrolledCoursesController:
         """
         Inyecta el 'shortname' del rol de Moodle en la estructura de cada curso.
 
-        Realiza una petición por cada curso para obtener el perfil del usuario
-        dentro de ese contexto académico. Si falla, asigna por defecto el rol 'student'.
+        Realiza peticiones concurrentes (asyncio.gather) para evitar el problema de N+1
+        y mantener la latencia al mínimo sin alterar la estructura esperada por el cliente.
         """
-        for course in courses:
+        async def _fetch_single_course_role(course: dict | object) -> None:
             raw_id = (
                 course.get("id")
                 if isinstance(course, dict)
@@ -163,7 +142,7 @@ class UserEnrolledCoursesController:
                     course["role"] = ["student"]
                 else:
                     course.role = ["student"]
-                continue
+                return
 
             try:
                 get_user_profile = await SharedMoodleService.get_user_profile(
@@ -175,24 +154,25 @@ class UserEnrolledCoursesController:
                     or not get_user_profile.user_profile
                     or not get_user_profile.user_profile.get("roles")
                 ):
-                    if isinstance(course, dict):
-                        course["role"] = ["student"]
-                    else:
-                        course.role = ["student"]
+                    roles = ["student"]
                 else:
                     roles = [
                         role["shortname"]
                         for role in get_user_profile.user_profile["roles"]
                     ]
-                    if isinstance(course, dict):
-                        course["role"] = roles
-                    else:
-                        course.role = roles
+
+                if isinstance(course, dict):
+                    course["role"] = roles
+                else:
+                    course.role = roles
             except Exception:
                 if isinstance(course, dict):
                     course["role"] = ["student"]
                 else:
                     course.role = ["student"]
+
+        if courses:
+            await asyncio.gather(*[_fetch_single_course_role(c) for c in courses])
 
         return courses
 
