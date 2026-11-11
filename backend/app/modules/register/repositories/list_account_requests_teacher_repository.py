@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from sqlalchemy import case, select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.selectable import Select
@@ -26,16 +26,31 @@ class ListTeacherAccountRequestsRepository:
         self,
         institute: InstitutesEnum,
         status: RequestStatusEnum | None = None,
-    ) -> list[dict[str, Any]]:
-        """Retorna las solicitudes de docentes con los campos requeridos por el controlador."""
-        stmt = self._build_statement(institute=institute, status=status)
+        page: int = 1,
+        limit: int = 10,
+    ) -> tuple[list[dict[str, Any]], int]:
+        """Retorna las solicitudes de docentes paginadas y el conteo total."""
+        filters = self._build_filters(institute=institute, status=status)
+
+        # 1. Total de registros para la paginación
+        count_stmt = (
+            select(func.count(TeacherCourseRequest.id))
+            .join(Auth, TeacherCourseRequest.auth_id == Auth.id)
+            .join(UserProfile, UserProfile.auth_id == Auth.id)
+            .where(*filters)
+        )
+        total = self.db.execute(count_stmt).scalar() or 0
+
+        # 2. Consulta con limit y offset
+        stmt = self._build_statement(filters=filters, page=page, limit=limit)
         rows = self.db.execute(stmt).mappings().all()
-        return [dict(row) for row in rows]
+        return [dict(row) for row in rows], total
 
     def _build_statement(
         self,
-        institute: InstitutesEnum,
-        status: RequestStatusEnum | None,
+        filters: list[ColumnElement[bool]],
+        page: int,
+        limit: int,
     ) -> Select[
         tuple[
             int,
@@ -50,9 +65,9 @@ class ListTeacherAccountRequestsRepository:
             str,
         ]
     ]:
-        """Construye la consulta para listar solicitudes de docentes."""
+        """Construye la consulta para listar solicitudes de docentes con paginación."""
         status_order = self._build_status_order()
-        filters = self._build_filters(institute=institute, status=status)
+        offset = (page - 1) * limit
 
         return (
             select(
@@ -70,7 +85,9 @@ class ListTeacherAccountRequestsRepository:
             .join(Auth, TeacherCourseRequest.auth_id == Auth.id)
             .join(UserProfile, UserProfile.auth_id == Auth.id)
             .where(*filters)
-            .order_by(status_order, TeacherCourseRequest.status)
+            .order_by(status_order, TeacherCourseRequest.id.desc())
+            .offset(offset)
+            .limit(limit)
         )
 
     @staticmethod
