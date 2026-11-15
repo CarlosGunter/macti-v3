@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Path, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Path, Query, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.db.database import get_db
@@ -239,5 +239,10 @@ async def create_account(
     request: Request,  # noqa: ARG001
     body_info: CreateAccountSchema,
     db: Annotated[Session, Depends(get_db)],
+    background_tasks: BackgroundTasks,
 ):
-    return await CreateAccountController.create_account(data=body_info, db=db)
+    return await CreateAccountController.create_account(
+        data=body_info,
+        db=db,
+        background_tasks=background_tasks,
+    )
