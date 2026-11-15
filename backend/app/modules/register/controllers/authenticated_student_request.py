@@ -1,9 +1,12 @@
 """Controlador para solicitudes de curso de estudiantes autenticados."""
 
-from fastapi import HTTPException
+from typing import Annotated
+
+from fastapi import Depends, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.core.db.database import get_db
 from app.modules.register.repositories.authenticated_student_request_repository import (
     AuthenticatedStudentRequestRepository,
 )
@@ -18,42 +21,42 @@ from ..schemas import AuthenticatedStudentRequestSchema
 class AuthenticatedStudentRequestController:
     """Controlador que registra solicitudes de curso para alumnos autenticados."""
 
-    @staticmethod
+    def __init__(self, db: Annotated[Session, Depends(get_db)]) -> None:
+        """
+        Inicializa el controlador inyectando la sesión de base de datos y su repositorio.
+
+        Args:
+            db: Sesión activa de SQLAlchemy inyectada por FastAPI.
+        """
+        self.db = db
+        self.repository = AuthenticatedStudentRequestRepository(db)
+
     async def request_student_course(
+        self,
         data: AuthenticatedStudentRequestSchema,
-        db: Session,
         user_info: CurrentUser,
     ) -> dict[str, str]:
         """Orquesta la creación de una solicitud de curso para un alumno autenticado."""
-        repository = AuthenticatedStudentRequestRepository(db)
-        auth = AuthenticatedStudentRequestController._get_auth_or_raise(
-            repository=repository,
-            user_info=user_info,
-        )
-        AuthenticatedStudentRequestController._validate_no_duplicate_course_request(
-            repository=repository,
+        auth = self._get_auth_or_raise(user_info=user_info)
+        self._validate_no_duplicate_course_request(
             auth=auth,
             course_id=data.course_id,
         )
 
-        student_request = repository.create_student_request(
+        student_request = self.repository.create_student_request(
             auth_id=auth.id,
             course_id=data.course_id,
         )
-        AuthenticatedStudentRequestController._persist_request_or_raise(
-            repository=repository,
-            student_request=student_request,
-        )
+        self._persist_request_or_raise(student_request=student_request)
 
         return {"message": "Solicitud de curso registrada correctamente."}
 
-    @staticmethod
     def _get_auth_or_raise(
-        repository: AuthenticatedStudentRequestRepository,
+        self,
         user_info: CurrentUser,
     ) -> Auth:
         """Recupera el `Auth` asociado al usuario autenticado o retorna HTTP 404."""
-        auth = repository.get_auth_with_relations(user_info.auth_id)
+        auth = self.repository.get_auth_with_relations(user_info.auth_id)
 
         if auth is None:
             raise HTTPException(
@@ -66,16 +69,15 @@ class AuthenticatedStudentRequestController:
 
         return auth
 
-    @staticmethod
     def _validate_no_duplicate_course_request(
-        repository: AuthenticatedStudentRequestRepository,
+        self,
         auth: Auth,
         course_id: int,
     ) -> None:
         """Valida que no exista una solicitud duplicada y que no esté ya inscrito."""
         # Validación 1: ¿Ya existe una solicitud para este curso e instituto?
         exists_duplicate_request = (
-            repository.exists_student_request_for_course_and_institute(
+            self.repository.exists_student_request_for_course_and_institute(
                 auth_id=auth.id,
                 course_id=course_id,
                 institute=auth.institute,
@@ -105,17 +107,16 @@ class AuthenticatedStudentRequestController:
                     },
                 )
 
-    @staticmethod
     def _persist_request_or_raise(
-        repository: AuthenticatedStudentRequestRepository,
+        self,
         student_request: StudentCourseRequest,
     ) -> None:
         """Persiste la solicitud y maneja errores de infraestructura de forma genérica."""
         try:
-            repository.commit()
-            repository.refresh(student_request)
+            self.repository.commit()
+            self.repository.refresh(student_request)
         except SQLAlchemyError as exc:
-            repository.rollback()
+            self.repository.rollback()
             raise HTTPException(
                 status_code=500,
                 detail={
@@ -124,7 +125,7 @@ class AuthenticatedStudentRequestController:
                 },
             ) from exc
         except Exception as exc:
-            repository.rollback()
+            self.repository.rollback()
             raise HTTPException(
                 status_code=500,
                 detail={

@@ -3,11 +3,13 @@
 # Permite que el front-end recupere datos de forma segura durante el onboarding.
 
 from datetime import datetime
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.db.database import get_db
 from app.modules.register.repositories.get_user_info_repository import (
     GetUserInfoRepository,
 )
@@ -20,8 +22,17 @@ class GetUserInfoController:
     la información del usuario asociado.
     """
 
-    @staticmethod
-    async def get_user_info(token: UUID, db: Session) -> UserInfoResponse:
+    def __init__(self, db: Annotated[Session, Depends(get_db)]) -> None:
+        """
+        Inicializa el controlador inyectando la sesión de base de datos y su repositorio.
+
+        Args:
+            db: Sesión activa de SQLAlchemy inyectada por FastAPI.
+        """
+        self.db = db
+        self.repository = GetUserInfoRepository(db)
+
+    async def get_user_info(self, token: UUID) -> UserInfoResponse:
         """
         Recupera los datos básicos del usuario mediante un token.
 
@@ -31,17 +42,12 @@ class GetUserInfoController:
         3. Verifica la expiración.
         4. Retorna la información del usuario si el token es válido.
         """
-        repository = GetUserInfoRepository(db)
+        token_context = self._get_token_context_or_raise(token)
+        self._validate_token_state(token_context)
 
-        token_context = GetUserInfoController._get_token_context_or_raise(
-            repository, token
-        )
-        GetUserInfoController._validate_token_state(token_context)
+        return self._build_response(token_context)
 
-        return GetUserInfoController._build_response(token_context)
-
-    @staticmethod
-    def _get_token_context_or_raise(repository: GetUserInfoRepository, token: UUID):
+    def _get_token_context_or_raise(self, token: UUID):
         if not token:
             raise HTTPException(
                 status_code=400,
@@ -51,7 +57,7 @@ class GetUserInfoController:
                 },
             )
 
-        token_context = repository.get_token_context(token)
+        token_context = self.repository.get_token_context(token)
         if token_context is None:
             raise HTTPException(
                 status_code=404,
@@ -63,8 +69,7 @@ class GetUserInfoController:
 
         return token_context
 
-    @staticmethod
-    def _validate_token_state(token_context) -> None:
+    def _validate_token_state(self, token_context) -> None:
         now = datetime.now(token_context.created_at.tzinfo)
         if token_context.is_used:
             raise HTTPException(
@@ -93,14 +98,13 @@ class GetUserInfoController:
                 },
             )
 
-    @staticmethod
-    def _build_response(token_context) -> UserInfoResponse:
+    def _build_response(self, token_context) -> UserInfoResponse:
         auth = token_context.auth
         profile = auth.profile
 
         # Obtener la solicitud de curso única del usuario
         # Accedemos a las relaciones ya cargadas del token_context
-        course_request = GetUserInfoController._get_user_course_request(auth)
+        course_request = self._get_user_course_request(auth)
 
         # Se prioriza la información del perfil, porque allí vive el nombre del usuario.
         response_data = {
@@ -119,8 +123,7 @@ class GetUserInfoController:
 
         return UserInfoResponse(**response_data)
 
-    @staticmethod
-    def _get_user_course_request(auth) -> CourseRequestInfo:
+    def _get_user_course_request(self, auth) -> CourseRequestInfo:
         """
         Extrae la solicitud de curso del usuario y valida que exista exactamente una.
 

@@ -3,10 +3,8 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Path, Query, Request, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, Path, Query, Request, status
 
-from app.core.db.database import get_db
 from app.core.limiter import limiter
 from app.modules.register.controllers.account_requests import (
     AccountRequestsController,
@@ -64,11 +62,9 @@ router = APIRouter(prefix="/register", tags=["Registro"])
 async def request_student_account(
     request: Request,  # noqa: ARG001
     body_info: StudentRequestSchema,
-    db: Annotated[Session, Depends(get_db)],
+    controller: Annotated[AccountRequestsController, Depends()],
 ):
-    return await AccountRequestsController.request_account(
-        role=AccountRoleEnum.ALUMNO, data=body_info, db=db
-    )
+    return await controller.request_account(role=AccountRoleEnum.ALUMNO, data=body_info)
 
 
 @router.post(
@@ -82,13 +78,12 @@ async def request_student_account(
 async def request_authenticated_student_account(
     request: Request,  # noqa: ARG001
     body_info: AuthenticatedStudentRequestSchema,
-    db: Annotated[Session, Depends(get_db)],
+    controller: Annotated[AuthenticatedStudentRequestController, Depends()],
     user_info: Annotated[CurrentUser, Depends(get_current_user)],
 ) -> dict[str, str]:
     """Registra una solicitud de curso usando la identidad autenticada del alumno."""
-    return await AuthenticatedStudentRequestController.request_student_course(
+    return await controller.request_student_course(
         data=body_info,
-        db=db,
         user_info=user_info,
     )
 
@@ -104,10 +99,10 @@ async def request_authenticated_student_account(
 async def request_teacher_account(
     request: Request,  # noqa: ARG001
     body_info: TeacherRequestSchema,
-    db: Annotated[Session, Depends(get_db)],
+    controller: Annotated[AccountRequestsController, Depends()],
 ):
-    return await AccountRequestsController.request_account(
-        role=AccountRoleEnum.DOCENTE, data=body_info, db=db
+    return await controller.request_account(
+        role=AccountRoleEnum.DOCENTE, data=body_info
     )
 
 
@@ -122,13 +117,12 @@ async def request_teacher_account(
 async def request_authenticated_teacher_account(
     request: Request,  # noqa: ARG001
     body_info: AuthenticatedTeacherRequestSchema,
-    db: Annotated[Session, Depends(get_db)],
+    controller: Annotated[AuthenticatedTeacherRequestController, Depends()],
     user_info: Annotated[CurrentUser, Depends(get_current_user)],
 ) -> dict[str, str]:
     """Registra una solicitud de nuevo curso usando la identidad autenticada del docente."""
-    return await AuthenticatedTeacherRequestController.request_teacher_course(
+    return await controller.request_teacher_course(
         data=body_info,
-        db=db,
         user_info=user_info,
     )
 
@@ -139,7 +133,7 @@ async def request_authenticated_teacher_account(
     response_model=PaginatedAccountsResponse,
 )
 async def list_accounts_requests(
-    db: Annotated[Session, Depends(get_db)],
+    controller: Annotated[ListAccountRequestsController, Depends()],
     _: Annotated[None, Depends(ScopeCourseManager())],
     institute: InstitutesEnum = Query(..., description="Instituto"),
     course_id: int = Query(..., description="ID del curso en Moodle"),
@@ -151,8 +145,7 @@ async def list_accounts_requests(
         10, ge=1, le=100, description="Cantidad de registros por página"
     ),
 ):
-    return await ListAccountRequestsController.list_accounts_requests(
-        db=db,
+    return await controller.list_accounts_requests(
         course_id=course_id,
         institute=institute,
         status=status,
@@ -168,7 +161,7 @@ async def list_accounts_requests(
     response_model=PaginatedTeacherAccountsResponse,
 )
 async def list_teacher_accounts_requests(
-    db: Annotated[Session, Depends(get_db)],
+    controller: Annotated[AccountRequestsTeacherController, Depends()],
     _: Annotated[None, Depends(AuthScopes(AccountRoleEnum.ADMIN))],
     institute: InstitutesEnum = Query(..., description="Instituto"),
     status: RequestStatusEnum | None = Query(
@@ -179,12 +172,11 @@ async def list_teacher_accounts_requests(
         10, ge=1, le=100, description="Cantidad de registros por página"
     ),
 ):
-    return await AccountRequestsTeacherController.list_teacher_accounts_requests(
+    return await controller.list_teacher_accounts_requests(
         institute=institute,
         status=status,
         page=page,
         limit=limit,
-        db=db,
     )
 
 
@@ -199,16 +191,15 @@ async def update_request_status(
     role: Annotated[
         AccountRoleEnum, Path(description="Rol de la solicitud a actualizar")
     ],
-    db: Annotated[Session, Depends(get_db)],
+    controller: Annotated[RequestStatusController, Depends()],
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
     institute: InstitutesEnum = Query(
         ..., description="Instituto al que pertenece la solicitud"
     ),
 ):
-    return await RequestStatusController.update_request_status(
+    return await controller.update_request_status(
         data=body_info,
         role=role,
-        db=db,
         institute=institute,
         current_user=current_user,
     )
@@ -224,9 +215,9 @@ async def update_request_status(
 async def confirm_email(
     request: Request,  # noqa: ARG001
     token: UUID,
-    db: Annotated[Session, Depends(get_db)],
+    controller: Annotated[GetUserInfoController, Depends()],
 ):
-    return await GetUserInfoController.get_user_info(token=token, db=db)
+    return await controller.get_user_info(token=token)
 
 
 @router.post(
@@ -238,11 +229,6 @@ async def confirm_email(
 async def create_account(
     request: Request,  # noqa: ARG001
     body_info: CreateAccountSchema,
-    db: Annotated[Session, Depends(get_db)],
-    background_tasks: BackgroundTasks,
+    controller: Annotated[CreateAccountController, Depends()],
 ):
-    return await CreateAccountController.create_account(
-        data=body_info,
-        db=db,
-        background_tasks=background_tasks,
-    )
+    return await controller.create_account(data=body_info)

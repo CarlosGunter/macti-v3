@@ -3,12 +3,13 @@
 # inscripción a cursos, creación de grupos y limpieza de tokens de verificación.
 
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import BackgroundTasks, HTTPException
+from fastapi import BackgroundTasks, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.db.database import get_db
 from app.core.logging.macti_logger import (
     log_info,
     log_macti_error,
@@ -38,25 +39,35 @@ class CreateAccountController:
     Separa responsabilidades en funciones privadas para claridad y testabilidad.
     """
 
-    @staticmethod
+    def __init__(
+        self,
+        db: Annotated[Session, Depends(get_db)],
+        background_tasks: BackgroundTasks,
+    ) -> None:
+        """
+        Inicializa el controlador con las dependencias de sesión y tareas en segundo plano.
+
+        Args:
+            db: Sesión activa de SQLAlchemy inyectada por FastAPI.
+            background_tasks: Gestor de tareas secundarias de FastAPI.
+        """
+        self.db = db
+        self.repository = CreateAccountRepository(db)
+        self.background_tasks = background_tasks
+
     async def create_account(
+        self,
         data: CreateAccountSchema,
-        db: Session,
-        background_tasks: BackgroundTasks | None = None,
     ) -> dict[str, Any]:
         """Flujo principal de creación de cuenta.
 
         Args:
             data: `CreateAccountSchema` con `user_id`, `new_password` y `token`.
-            db: Sesión de SQLAlchemy.
-            background_tasks: Gestor opcional de tareas secundarias de FastAPI.
 
         Returns:
             Diccionario con mensaje de éxito.
         """
-        repo = CreateAccountRepository(db)
-
-        auth = repo.get_auth_with_relations(data.user_id)
+        auth = self.repository.get_auth_with_relations(data.user_id)
         if auth is None:
             log_macti_error(
                 logger_name=LOGGER_NAME,
@@ -71,15 +82,13 @@ class CreateAccountController:
                 },
             )
 
-        CreateAccountController._validate_verification_tokens(auth, data.token)
-        CreateAccountController._validate_request_approved(auth)
+        self._validate_verification_tokens(auth, data.token)
+        self._validate_request_approved(auth)
 
         # KEYCLOAK
-        kc_user_id = await CreateAccountController._recover_existing_kc(auth)
+        kc_user_id = await self._recover_existing_kc(auth)
         if not kc_user_id:
-            kc_user_id = await CreateAccountController._create_user_kc_or_raise(
-                auth, data.new_password
-            )
+            kc_user_id = await self._create_user_kc_or_raise(auth, data.new_password)
             log_info(
                 logger_name=LOGGER_NAME,
                 message="Usuario creado exitosamente en Keycloak",
@@ -93,20 +102,18 @@ class CreateAccountController:
             )
 
         # MOODLE - crear usuario y delegar la resolución de cursos al caso de uso
-        moodle_user_id = await CreateAccountController._create_moodle_user_or_raise(
-            auth
-        )
+        moodle_user_id = await self._create_moodle_user_or_raise(auth)
         log_info(
             logger_name=LOGGER_NAME,
             message="Usuario creado exitosamente en Moodle",
             extra={"service": "Moodle", "institute": auth.institute.value},
         )
 
-        approved_request = CreateAccountController._get_approved_course_request(auth)
+        approved_request = self._get_approved_course_request(auth)
         enroll_user_use_case = EnrollUserUseCase(
             moodle_service=MoodleService(),
             institute=auth.institute,
-            db=db,
+            db=self.db,
         )
         enroll_result = await enroll_user_use_case.execute(
             request_course_data=approved_request,
@@ -148,21 +155,21 @@ class CreateAccountController:
         institute_value = auth.institute.value
 
         # Finalizar: actualizar estados y limpiar token
-        CreateAccountController._finalize_transaction(
-            repo=repo, auth=auth, kc_user_id=kc_user_id, moodle_user_id=moodle_user_id
+        self._finalize_transaction(
+            auth=auth, kc_user_id=kc_user_id, moodle_user_id=moodle_user_id
         )
 
         # Delegar sincronización con JupyterHub a segundo plano para no bloquear la respuesta HTTP
-        if background_tasks is not None:
-            background_tasks.add_task(
-                CreateAccountController._sync_jupyter_background,
+        if self.background_tasks is not None:
+            self.background_tasks.add_task(
+                self._sync_jupyter_background,
                 email=user_email,
                 role=rol_actual,
                 first_name=first_name,
                 last_name=last_name,
             )
         else:
-            await CreateAccountController._sync_jupyter_background(
+            await self._sync_jupyter_background(
                 email=user_email,
                 role=rol_actual,
                 first_name=first_name,
@@ -177,8 +184,8 @@ class CreateAccountController:
 
         return {"message": "Cuenta creada exitosamente"}
 
-    @staticmethod
     async def _sync_jupyter_background(
+        self,
         email: str,
         role: str,
         first_name: str,
@@ -212,8 +219,7 @@ class CreateAccountController:
                 },
             )
 
-    @staticmethod
-    def _validate_verification_tokens(auth: Auth, token: UUID) -> None:
+    def _validate_verification_tokens(self, auth: Auth, token: UUID) -> None:
         """Valida el token único de verificación asociado al `Auth`.
 
         Requisitos:
@@ -226,7 +232,6 @@ class CreateAccountController:
         - `TOKEN_NO_ENCONTRADO` si no existe token asociado.
         - `TOKEN_INVALIDO` si el token no coincide, está usado o expirado.
         """
-
         if auth.verification_token is None:
             log_macti_error(
                 logger_name=LOGGER_NAME,
@@ -291,8 +296,7 @@ class CreateAccountController:
                 },
             )
 
-    @staticmethod
-    def _validate_request_approved(auth: Auth) -> None:
+    def _validate_request_approved(self, auth: Auth) -> None:
         """Valida que exista una solicitud de curso aprobada para este usuario.
 
         Según el flujo:
@@ -334,8 +338,7 @@ class CreateAccountController:
                 },
             )
 
-    @staticmethod
-    async def _create_user_kc_or_raise(auth: Auth, password: str) -> UUID:
+    async def _create_user_kc_or_raise(self, auth: Auth, password: str) -> UUID:
         """Crea el usuario en Keycloak o recupera su ID si ya existe.
 
         Divide la lógica para reducir complejidad cognitiva.
@@ -373,8 +376,7 @@ class CreateAccountController:
 
         return kc_result.user_id
 
-    @staticmethod
-    async def _recover_existing_kc(auth: Auth) -> UUID | None:
+    async def _recover_existing_kc(self, auth: Auth) -> UUID | None:
         """Recupera un usuario existente en Keycloak por correo y guarda su ID.
 
         Busca el usuario por email en Keycloak y almacena su `kc_id` en el
@@ -391,8 +393,8 @@ class CreateAccountController:
             else None
         )
 
-    @staticmethod
     def _get_approved_course_request(
+        self,
         auth: Auth,
     ) -> StudentCourseRequest | TeacherCourseRequest:
         """Recupera la solicitud de curso aprobada que define el contexto de matrícula."""
@@ -401,8 +403,7 @@ class CreateAccountController:
         else:
             return auth.teacher_course_requests[0]
 
-    @staticmethod
-    async def _create_moodle_user_or_raise(auth: Auth) -> int:
+    async def _create_moodle_user_or_raise(self, auth: Auth) -> int:
         """Crea el usuario en Moodle; lanza y permite rollback si falla.
 
         Crea el usuario en la instancia de Moodle y almacena el `moodle_id`
@@ -440,24 +441,22 @@ class CreateAccountController:
 
         return moodle_result.user_id
 
-    @staticmethod
     def _finalize_transaction(
-        repo: CreateAccountRepository, auth: Auth, kc_user_id: UUID, moodle_user_id: int
+        self, auth: Auth, kc_user_id: UUID, moodle_user_id: int
     ) -> None:
         """Actualiza estados locales, elimina tokens y persiste la transacción."""
-
         # Guardar IDs de servicios externos en JIDs
-        jid_entry = repo.save_jids(
+        jid_entry = self.repository.save_jids(
             auth_id=auth.id,
             kc_id=kc_user_id,
             moodle_id=moodle_user_id,
         )
 
-        repo.activate_auth_account(auth.id)
+        self.repository.activate_auth_account(auth.id)
 
         # Eliminar token
-        repo.delete_verification_token(auth.id)
+        self.repository.delete_verification_token(auth.id)
 
         # Persistir
-        repo.commit()
-        repo.refresh(jid_entry)
+        self.repository.commit()
+        self.repository.refresh(jid_entry)

@@ -2,11 +2,12 @@
 # Este controlador maneja la transición de estados de las solicitudes de cuenta.
 # Orquesta la lógica de negocio sin ocuparse directamente de la persistencia.
 
+from typing import Annotated
 
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 
-# Agregamos la importación de logging para registrar errores y eventos importantes
+from app.core.db.database import get_db
 from app.core.logging.macti_logger import log_macti_error
 from app.modules.register.repositories.request_status_repository import (
     RequestStatusRepository,
@@ -54,11 +55,20 @@ class RequestStatusController:
         RequestStatusEnum.ENROLLED: set(),
     }
 
-    @staticmethod
+    def __init__(self, db: Annotated[Session, Depends(get_db)]) -> None:
+        """
+        Inicializa el controlador inyectando la sesión de base de datos y creando su repositorio.
+
+        Args:
+            db: Sesión activa de SQLAlchemy inyectada por FastAPI.
+        """
+        self.db = db
+        self.repository = RequestStatusRepository(db)
+
     async def update_request_status(
+        self,
         data: RequestStatusUpdateSchema,
         role: AccountRoleEnum,
-        db: Session,
         institute: InstitutesEnum,
         current_user: CurrentUser,
     ):
@@ -70,10 +80,8 @@ class RequestStatusController:
         2. Procesa la transición según el nuevo estado
         3. Persiste los cambios
         """
-        repository = RequestStatusRepository(db)
-
         # Obtener la solicitud con todas sus relaciones
-        course_request = repository.get_course_request(data.request_id, role)
+        course_request = self.repository.get_course_request(data.request_id, role)
         if not course_request:
             raise HTTPException(
                 status_code=404,
@@ -84,11 +92,9 @@ class RequestStatusController:
             )
 
         # Validar transición de estado
-        RequestStatusController._validate_transition(
-            course_request.status, data.new_status
-        )
+        self._validate_transition(course_request.status, data.new_status)
 
-        await RequestStatusController._authorize_request_action(
+        await self._authorize_request_action(
             course_request=course_request,
             institute=institute,
             current_user=current_user,
@@ -96,14 +102,14 @@ class RequestStatusController:
 
         # Procesar cambio de estado
         try:
-            message = await RequestStatusController._process_status_transition(
-                course_request, data.new_status, institute, repository
+            message = await self._process_status_transition(
+                course_request, data.new_status, institute
             )
         except HTTPException:
-            repository.rollback()
+            self.repository.rollback()
             raise
         except Exception as e:
-            repository.rollback()
+            self.repository.rollback()
             raise HTTPException(
                 status_code=500,
                 detail={
@@ -113,12 +119,12 @@ class RequestStatusController:
             ) from e
 
         # Persiste cambios
-        repository.commit()
+        self.repository.commit()
 
         return {"message": message}
 
-    @staticmethod
     async def _authorize_request_action(
+        self,
         course_request: StudentCourseRequest | TeacherCourseRequest,
         institute: InstitutesEnum,
         current_user: CurrentUser,
@@ -144,9 +150,8 @@ class RequestStatusController:
             )
             return
 
-    @staticmethod
     def _validate_transition(
-        current_status: RequestStatusEnum, new_status: RequestStatusEnum
+        self, current_status: RequestStatusEnum, new_status: RequestStatusEnum
     ) -> None:
         """
         Valida que la transición de estado sea permitida.
@@ -158,9 +163,7 @@ class RequestStatusController:
         Raises:
             HTTPException si la transición no es válida
         """
-        valid_transitions = RequestStatusController.VALID_TRANSITIONS.get(
-            current_status, set()
-        )
+        valid_transitions = self.VALID_TRANSITIONS.get(current_status, set())
         if new_status not in valid_transitions:
             raise HTTPException(
                 status_code=409,
@@ -170,12 +173,11 @@ class RequestStatusController:
                 },
             )
 
-    @staticmethod
     async def _process_status_transition(
+        self,
         course_request: StudentCourseRequest | TeacherCourseRequest,
         new_status: RequestStatusEnum,
         institute: InstitutesEnum,
-        repository: RequestStatusRepository,
     ) -> str:
         """
         Procesa la transición de estado según el nuevo estado requerido.
@@ -184,8 +186,6 @@ class RequestStatusController:
             course_request: La solicitud de curso a procesar
             new_status: El nuevo estado
             institute: Instituto del usuario
-            repository: Repositorio para operaciones de BD
-            role: Rol del usuario
 
         Returns:
             Mensaje descriptivo del resultado
@@ -194,15 +194,11 @@ class RequestStatusController:
             HTTPException si hay errores en el proceso
         """
         if new_status == RequestStatusEnum.APPROVED:
-            return await RequestStatusController._handle_approved(
-                course_request, institute, repository
-            )
+            return await self._handle_approved(course_request, institute)
         elif new_status == RequestStatusEnum.PENDING:
-            return RequestStatusController._handle_pending(course_request, repository)
+            return self._handle_pending(course_request)
         elif new_status == RequestStatusEnum.REJECTED:
-            return await RequestStatusController._handle_rejected(
-                course_request, course_request.status, repository
-            )
+            return await self._handle_rejected(course_request, course_request.status)
         else:
             raise HTTPException(
                 status_code=422,
@@ -212,27 +208,25 @@ class RequestStatusController:
                 },
             )
 
-    @staticmethod
     async def _handle_approved(
+        self,
         course_request: StudentCourseRequest | TeacherCourseRequest,
         institute: InstitutesEnum,
-        repository: RequestStatusRepository,
     ) -> str:
         """
         Procesa aprobación de solicitud.
 
         Si la cuenta NO está activa:
         - Genera un token de verificación
-        - Cambia estado a ENROLLED
+        - Cambia estado a APPROVED
 
         Si la cuenta SÍ está activa:
         - Inscribe al usuario en el curso
-        - Cambia estado a APPROVED
+        - Cambia estado a ENROLLED
 
         Args:
             course_request: La solicitud a aprobar
             institute: Instituto del usuario
-            repository: Repositorio para operaciones de BD
 
         Returns:
             Mensaje descriptivo
@@ -241,18 +235,13 @@ class RequestStatusController:
             HTTPException si hay errores en la inscripción
         """
         if not course_request.auth.is_active:
-            return RequestStatusController._handle_approved_inactive(
-                course_request, repository
-            )
+            return self._handle_approved_inactive(course_request)
         else:
-            return await RequestStatusController._handle_approved_active(
-                course_request, institute, repository
-            )
+            return await self._handle_approved_active(course_request, institute)
 
-    @staticmethod
     def _handle_approved_inactive(
+        self,
         course_request: StudentCourseRequest | TeacherCourseRequest,
-        repository: RequestStatusRepository,
     ) -> str:
         """
         Genera token de verificación para cuentas inactivas.
@@ -260,11 +249,10 @@ class RequestStatusController:
         Pasos:
         1. Crea/actualiza token de verificación
         2. Envía correo de validación con el token
-        3. Cambia estado a ENROLLED
+        3. Cambia estado a APPROVED
 
         Args:
             course_request: La solicitud
-            repository: Repositorio para operaciones de BD
 
         Returns:
             Mensaje de éxito
@@ -273,7 +261,7 @@ class RequestStatusController:
             HTTPException si hay error al enviar el correo
         """
         # Generar token de verificación
-        token_record = repository.create_or_update_verification_token(
+        token_record = self.repository.create_or_update_verification_token(
             course_request.auth.id
         )
         token_value = getattr(token_record, "token", token_record)
@@ -302,14 +290,15 @@ class RequestStatusController:
                 },
             )
         # Cambiar estado a APPROVED
-        repository.update_request_status(course_request, RequestStatusEnum.APPROVED)
+        self.repository.update_request_status(
+            course_request, RequestStatusEnum.APPROVED
+        )
         return "Solicitud aprobada. Se ha enviado un correo de validación al usuario para confirmar su cuenta."
 
-    @staticmethod
     async def _handle_approved_active(
+        self,
         course_request: StudentCourseRequest | TeacherCourseRequest,
         institute: InstitutesEnum,
-        repository: RequestStatusRepository,
     ) -> str:
         """
         Inscribe usuario en el curso para cuentas activas.
@@ -317,7 +306,6 @@ class RequestStatusController:
         Args:
             course_request: La solicitud
             institute: Instituto del usuario
-            repository: Repositorio para operaciones de BD
 
         Returns:
             Mensaje de éxito
@@ -326,7 +314,7 @@ class RequestStatusController:
             HTTPException si hay errores en la inscripción
         """
         enroll_user_use_case = EnrollUserUseCase(
-            moodle_service=MoodleService(), institute=institute, db=repository.db
+            moodle_service=MoodleService(), institute=institute, db=self.db
         )
         enroll_result = await enroll_user_use_case.execute(
             request_course_data=course_request
@@ -341,32 +329,31 @@ class RequestStatusController:
                 },
             )
 
-        repository.update_request_status(course_request, RequestStatusEnum.ENROLLED)
+        self.repository.update_request_status(
+            course_request, RequestStatusEnum.ENROLLED
+        )
         return "Usuario inscrito exitosamente en el curso."
 
-    @staticmethod
     def _handle_pending(
+        self,
         course_request: StudentCourseRequest | TeacherCourseRequest,
-        repository: RequestStatusRepository,
     ) -> str:
         """
         Revierte el estado a pendiente.
 
         Args:
             course_request: La solicitud
-            repository: Repositorio para operaciones de BD
 
         Returns:
             Mensaje de éxito
         """
-        repository.update_request_status(course_request, RequestStatusEnum.PENDING)
+        self.repository.update_request_status(course_request, RequestStatusEnum.PENDING)
         return "Solicitud revertida a estado pendiente."
 
-    @staticmethod
     async def _handle_rejected(
+        self,
         course_request: StudentCourseRequest | TeacherCourseRequest,
         current_status: RequestStatusEnum,
-        repository: RequestStatusRepository,
     ) -> str:
         """
         Procesa rechazo de solicitud.
@@ -377,7 +364,6 @@ class RequestStatusController:
         Args:
             course_request: La solicitud
             current_status: Estado actual antes del rechazo
-            repository: Repositorio para operaciones de BD
 
         Returns:
             Mensaje de éxito
@@ -386,20 +372,20 @@ class RequestStatusController:
             HTTPException si hay errores al eliminar usuarios de sistemas externos
         """
         # Eliminar tokens de verificación
-        repository.delete_verification_tokens(course_request.auth.id)
+        self.repository.delete_verification_tokens(course_request.auth.id)
 
         # Si estaba ENROLLED, eliminar de Keycloak y Moodle
         if current_status == RequestStatusEnum.ENROLLED:
-            await RequestStatusController._delete_user_from_external_systems(
-                course_request
-            )
-            RequestStatusController._clear_external_ids(course_request)
+            await self._delete_user_from_external_systems(course_request)
+            self._clear_external_ids(course_request)
 
-        repository.update_request_status(course_request, RequestStatusEnum.REJECTED)
+        self.repository.update_request_status(
+            course_request, RequestStatusEnum.REJECTED
+        )
         return "Solicitud rechazada exitosamente."
 
-    @staticmethod
     async def _delete_user_from_external_systems(
+        self,
         course_request: StudentCourseRequest | TeacherCourseRequest,
     ) -> None:
         """
@@ -427,8 +413,8 @@ class RequestStatusController:
                 institute=course_request.institute,
             )
 
-    @staticmethod
     def _clear_external_ids(
+        self,
         course_request: StudentCourseRequest | TeacherCourseRequest,
     ) -> None:
         """
@@ -437,10 +423,4 @@ class RequestStatusController:
         Args:
             course_request: La solicitud a limpiar
         """
-        # Nota: Los IDs se almacenan en JIDs relacionado a Auth, no en la solicitud
-        # Si se requiere limpiar en el modelo, descomentar:
-        # if hasattr(course_request, 'kc_id'):
-        #     course_request.kc_id = None
-        # if hasattr(course_request, 'moodle_id'):
-        #     course_request.moodle_id = None
         pass

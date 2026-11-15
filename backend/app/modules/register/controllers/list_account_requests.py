@@ -1,8 +1,11 @@
 """Controlador para listar solicitudes de cuenta visibles para un usuario."""
 
-from fastapi import HTTPException
+from typing import Annotated
+
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.db.database import get_db
 from app.modules.register.repositories.list_account_requests_repository import (
     ListAccountRequestsRepository,
 )
@@ -17,9 +20,18 @@ class ListAccountRequestsController:
     visibles para el usuario actual.
     """
 
-    @staticmethod
+    def __init__(self, db: Annotated[Session, Depends(get_db)]) -> None:
+        """
+        Inicializa el controlador inyectando la sesión de base de datos y su repositorio.
+
+        Args:
+            db: Sesión activa de SQLAlchemy inyectada por FastAPI.
+        """
+        self.db = db
+        self.repository = ListAccountRequestsRepository(db)
+
     async def list_accounts_requests(
-        db: Session,
+        self,
         course_id: int,
         institute: InstitutesEnum,
         status: RequestStatusEnum | None = None,
@@ -30,7 +42,6 @@ class ListAccountRequestsController:
         Obtiene solicitudes de cuenta paginadas y filtradas por curso, instituto y estado.
 
         Args:
-            db: Sesión de base de datos.
             course_id: Identificador del curso en Moodle.
             institute: Instituto al que pertenece la solicitud.
             status: Filtro opcional por estatus.
@@ -40,10 +51,7 @@ class ListAccountRequestsController:
         Returns:
             PaginatedResponse: Lista paginada con metadatos de conteo.
         """
-        repository = ListAccountRequestsRepository(db)
-
-        items, total = ListAccountRequestsController._list_account_requests_or_raise(
-            repository=repository,
+        items, total = self._list_account_requests_or_raise(
             course_id=course_id,
             institute=institute,
             status=status,
@@ -58,9 +66,8 @@ class ListAccountRequestsController:
             limit=limit,
         )
 
-    @staticmethod
     def _list_account_requests_or_raise(
-        repository: ListAccountRequestsRepository,
+        self,
         course_id: int,
         institute: InstitutesEnum,
         status: RequestStatusEnum | None,
@@ -69,7 +76,7 @@ class ListAccountRequestsController:
     ) -> tuple[list[dict[str, object]], int]:
         """Delega al repositorio la consulta de solicitudes visibles con paginación."""
         try:
-            return repository.list_student_account_requests(
+            return self.repository.list_student_account_requests(
                 course_id=course_id,
                 institute=institute,
                 status=status,

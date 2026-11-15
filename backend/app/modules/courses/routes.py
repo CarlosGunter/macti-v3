@@ -5,10 +5,10 @@
 # de Moodle y la vista personalizada de cursos para usuarios autenticados,
 # aplicando validaciones de esquema y filtros por instituto.
 
-from fastapi import APIRouter, Depends, Query, Request
-from sqlalchemy.orm import Session
+from typing import Annotated
 
-from app.core.db.database import get_db
+from fastapi import APIRouter, Depends, Query, Request
+
 from app.core.limiter import limiter
 from app.core.logging.macti_logger import log_info, log_security_event
 from app.modules.courses.controllers.list_courses import ListCoursesController
@@ -36,6 +36,7 @@ LOGGER_NAME = __name__
 @limiter.limit("30/minute")
 async def list_courses(
     request: Request,
+    controller: Annotated[ListCoursesController, Depends()],
     institute: InstitutesEnum = Query(..., description="Nombre del instituto (Enum)"),
     ids: list[int] | None = Query(
         None, description="Lista de IDs de cursos para filtrar"
@@ -67,7 +68,7 @@ async def list_courses(
         },
     )
 
-    return await ListCoursesController.list_courses(
+    return await controller.list_courses(
         institute=institute, ids=ids, search=search, page=page, limit=limit
     )
 
@@ -80,6 +81,8 @@ async def list_courses(
 @limiter.limit("20/minute")
 async def list_user_enrolled_courses(
     request: Request,
+    controller: Annotated[UserEnrolledCoursesController, Depends()],
+    user_info: Annotated[CurrentUser, Depends(get_current_user)],
     institute: InstitutesEnum = Query(..., description="Nombre del instituto"),
     search: str | None = Query(
         None,
@@ -87,8 +90,6 @@ async def list_user_enrolled_courses(
     ),
     page: int = Query(1, ge=1, description="Número de página a consultar"),
     limit: int = Query(10, ge=1, le=100, description="Cantidad de cursos por página"),
-    user_info: CurrentUser = Depends(get_current_user),
-    db: Session = Depends(get_db),
 ) -> PaginatedUserEnrolledCoursesResponse:
     """
     Endpoint privado para obtener la 'Mochila Digital' del usuario de forma paginada.
@@ -111,10 +112,9 @@ async def list_user_enrolled_courses(
         },
     )
 
-    return await UserEnrolledCoursesController.get_user_enrolled_courses(
+    return await controller.get_user_enrolled_courses(
         institute=institute,
         user_info=user_info,
-        db=db,
         search=search,
         page=page,
         limit=limit,
