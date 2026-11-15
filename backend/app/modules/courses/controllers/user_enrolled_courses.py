@@ -6,11 +6,12 @@
 # Moodle, añadiendo metadatos de roles por cada curso obtenido.
 
 import asyncio
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.db.database import get_db
 from app.modules.courses.repositories.user_enrolled_courses_repository import (
     UserEnrolledCoursesRepository,
 )
@@ -27,11 +28,23 @@ class UserEnrolledCoursesController:
     Centraliza la lógica de resolución de IDs y enriquecimiento de perfiles.
     """
 
-    @staticmethod
+    def __init__(
+        self,
+        db: Annotated[Session, Depends(get_db)],
+    ) -> None:
+        """
+        Inicializa el controlador inyectando la sesión de base de datos y creando el repositorio.
+
+        Args:
+            db: Sesión activa de SQLAlchemy inyectada por FastAPI.
+        """
+        self.db = db
+        self.repository = UserEnrolledCoursesRepository(db)
+
     async def get_user_enrolled_courses(
+        self,
         institute: InstitutesEnum,
         user_info: CurrentUser,
-        db: Session,
         search: str | None = None,
         page: int = 1,
         limit: int = 10,
@@ -47,15 +60,10 @@ class UserEnrolledCoursesController:
         5. Inyección de roles específicos por curso únicamente a los cursos de la página activa.
         """
         # 1. Obtención de identidad cruzada (Keycloak ID -> Moodle ID)
-        repo = UserEnrolledCoursesRepository(db)
-        user_id = await UserEnrolledCoursesController._resolve_moodle_id(
-            repo, user_info
-        )
+        user_id = await self._resolve_moodle_id(user_info)
 
         # 2. Consulta de cursos en el LMS
-        enrolled_courses = await UserEnrolledCoursesController._fetch_enrolled_courses(
-            institute, user_id
-        )
+        enrolled_courses = await self._fetch_enrolled_courses(institute, user_id)
 
         # 3. Filtrado tipo LIKE (insensible a mayúsculas/minúsculas)
         if search and search.strip():
@@ -86,7 +94,7 @@ class UserEnrolledCoursesController:
         paginated_courses = enrolled_courses[start:end]
 
         # 5. Inyección de roles específicos por curso (únicamente para la página activa)
-        enriched = await UserEnrolledCoursesController._add_role_to_courses(
+        enriched = await self._add_role_to_courses(
             institute=institute, courses=paginated_courses, user_id=user_id
         )
 
@@ -97,18 +105,15 @@ class UserEnrolledCoursesController:
             limit=limit,
         )
 
-    @classmethod
-    async def _resolve_moodle_id(
-        cls, repo: UserEnrolledCoursesRepository, user_info: CurrentUser
-    ) -> int:
+    async def _resolve_moodle_id(self, user_info: CurrentUser) -> int:
         """Resuelve el `moodle_id` local a partir del `kc_id` del request.
 
-        Usa el repositorio para obtener todas las filas asociadas y gestiona
+        Usa el repositorio de instancia para obtener todas las filas asociadas y gestiona
         los casos: 0 resultados, múltiples resultados o resultado sin `moodle_id`.
         """
         kc_id = user_info.kc_id
 
-        matches = repo.get_jids_by_kc_id(kc_id)
+        matches = self.repository.get_jids_by_kc_id(kc_id)
         if not matches:
             raise HTTPException(
                 status_code=404,
@@ -139,9 +144,8 @@ class UserEnrolledCoursesController:
 
         return entry.moodle_id
 
-    @classmethod
     async def _add_role_to_courses(
-        cls, institute: InstitutesEnum, courses: list[Any], user_id: int
+        self, institute: InstitutesEnum, courses: list[Any], user_id: int
     ) -> list[Any]:
         """
         Inyecta el 'shortname' del rol de Moodle en la estructura de cada curso.
@@ -203,8 +207,9 @@ class UserEnrolledCoursesController:
 
         return courses
 
-    @staticmethod
-    async def _fetch_enrolled_courses(institute: InstitutesEnum, user_id: int) -> list:
+    async def _fetch_enrolled_courses(
+        self, institute: InstitutesEnum, user_id: int
+    ) -> list[Any]:
         """Llama a la capa de servicio de Moodle y normaliza respuesta o lanza HTTPException."""
         result = await MoodleService.get_enrolled_courses(
             institute=institute, user_id=user_id

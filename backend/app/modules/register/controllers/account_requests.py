@@ -4,11 +4,13 @@
 # Maneja la lógica inicial de registro para Alumnos y Docentes, validando duplicados
 # y generando códigos de identificación interna (Subjects) para personal académico.
 
+from typing import Annotated
 
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.core.db.database import get_db
 from app.core.logging.macti_logger import log_db_error, log_info, log_macti_error
 from app.modules.register.repositories.request_account_repository import (
     RequestAccountRepository,
@@ -27,35 +29,41 @@ class AccountRequestsController:
     Incluye lógica de validación de correo único por instituto y generación de logs.
     """
 
-    @staticmethod
+    def __init__(self, db: Annotated[Session, Depends(get_db)]) -> None:
+        """
+        Inicializa el controlador inyectando la sesión de base de datos y su repositorio.
+
+        Args:
+            db: Sesión activa de SQLAlchemy inyectada por FastAPI.
+        """
+        self.db = db
+        self.repository = RequestAccountRepository(db)
+
     async def request_account(
+        self,
         role: AccountRoleEnum,
         data: StudentRequestSchema | TeacherRequestSchema,
-        db: Session,
-    ):
+    ) -> dict[str, str]:
         """
         Punto de entrada principal para registrar una solicitud de cuenta.
 
         Args:
             role: ALUMNO o DOCENTE
             data: Datos de la solicitud (varía según el rol)
-            db: Sesión de base de datos
 
         Returns:
             dict: Mensaje de éxito
         """
-        repository = RequestAccountRepository(db)
-
         try:
-            AccountRequestsController._validate_no_duplicate_request(repository, data)
-            await AccountRequestsController._validate_no_existing_keycloak_user(data)
-            AccountRequestsController._create_request(repository, role, data)
+            self._validate_no_duplicate_request(data)
+            await self._validate_no_existing_keycloak_user(data)
+            self._create_request(role, data)
             return {"message": "Solicitud de cuenta registrada correctamente."}
         except HTTPException:
-            repository.rollback()
+            self.repository.rollback()
             raise  # La excepción ya está manejada
         except SQLAlchemyError as exc:
-            repository.rollback()
+            self.repository.rollback()
             log_db_error(
                 logger_name=LOGGER_NAME,
                 operation="request_account_commit",
@@ -70,7 +78,7 @@ class AccountRequestsController:
                 },
             ) from exc
         except Exception as exc:
-            repository.rollback()
+            self.repository.rollback()
             log_macti_error(
                 logger_name=LOGGER_NAME,
                 error_code="ERROR_INTERNO",
@@ -85,12 +93,11 @@ class AccountRequestsController:
                 },
             ) from exc
 
-    @staticmethod
     def _validate_no_duplicate_request(
-        repository: RequestAccountRepository,
+        self,
         data: StudentRequestSchema | TeacherRequestSchema,
     ) -> None:
-        existing_request = repository.get_by_email_and_institute(
+        existing_request = self.repository.get_by_email_and_institute(
             data.email, data.institute
         )
 
@@ -112,8 +119,8 @@ class AccountRequestsController:
                 },
             )
 
-    @staticmethod
     async def _validate_no_existing_keycloak_user(
+        self,
         data: StudentRequestSchema | TeacherRequestSchema,
     ) -> None:
         verify_existence = await KeycloakService.user_exists(data.email, data.institute)
@@ -135,15 +142,14 @@ class AccountRequestsController:
                 },
             )
 
-    @staticmethod
     def _create_request(
-        repository: RequestAccountRepository,
+        self,
         role: AccountRoleEnum,
         data: StudentRequestSchema | TeacherRequestSchema,
     ) -> None:
-        db_request = repository.create_account_request(role=role, data=data)
-        repository.commit()
-        repository.refresh(db_request)
+        db_request = self.repository.create_account_request(role=role, data=data)
+        self.repository.commit()
+        self.repository.refresh(db_request)
 
         # Registro del evento exitoso en BD local sin exponer IDs ni correos
         log_info(

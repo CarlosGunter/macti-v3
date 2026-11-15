@@ -5,6 +5,8 @@
 # en un instituto específico, permitiendo que la interfaz de MACTI presente la
 # oferta académica actualizada en tiempo real.
 
+from typing import Any
+
 from fastapi import HTTPException
 
 from app.core.logging.macti_logger import log_macti_error
@@ -19,8 +21,17 @@ class ListCoursesController:
     alojados en plataformas externas (Moodle).
     """
 
-    @staticmethod
+    def __init__(self, moodle_service: type[MoodleService] = MoodleService) -> None:
+        """
+        Inicializa el controlador permitiendo inyectar o sustituir el servicio de Moodle en tests.
+
+        Args:
+            moodle_service: Clase o mock encargado de consultar el catálogo de cursos en Moodle.
+        """
+        self.moodle_service = moodle_service
+
     async def list_courses(
+        self,
         institute: InstitutesEnum,
         ids: list[int] | None = None,
         search: str | None = None,
@@ -40,9 +51,8 @@ class ListCoursesController:
             Lanza una excepción 502 (Bad Gateway) si la comunicación con Moodle falla
             o si el token de administración no tiene permisos de lectura.
         """
-
         # Consumo del servicio de Moodle especializado en lectura de catálogo
-        courses = await MoodleService.get_courses(institute=institute, ids=ids)
+        courses = await self.moodle_service.get_courses(institute=institute, ids=ids)
 
         # Cuando se recuperan todos los cursos, Moodle retorna en su primer elemento
         # la misma instancia, se elimina para evitar mostrarla en la lista.
@@ -78,7 +88,7 @@ class ListCoursesController:
         if search and search.strip():
             query = search.strip().lower()
 
-            def match_course(c) -> bool:
+            def match_course(c: Any) -> bool:
                 fn = getattr(c, "fullname", None) or (
                     c.get("fullname") if isinstance(c, dict) else ""
                 )
