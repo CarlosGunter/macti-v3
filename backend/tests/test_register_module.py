@@ -8,6 +8,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 from fastapi import BackgroundTasks, HTTPException
+from sqlalchemy import Boolean, Enum, ForeignKey, Integer, String, create_engine
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    mapped_column,
+    relationship,
+    sessionmaker,
+)
 
 from app.modules.register.controllers.account_requests import AccountRequestsController
 from app.modules.register.controllers.authenticated_student_request import (
@@ -26,6 +34,9 @@ from app.modules.register.controllers.list_account_requests_teacher import (
 )
 from app.modules.register.controllers.update_request_status import (
     RequestStatusController,
+)
+from app.modules.register.repositories.authenticated_student_request_repository import (
+    AuthenticatedStudentRequestRepository,
 )
 from app.modules.register.schemas import (
     AuthenticatedStudentRequestSchema,
@@ -129,6 +140,142 @@ class TestRegisterControllers(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             res_tea["message"], "Solicitud de curso registrada correctamente."
         )
+
+    async def test_existing_student_requests_new_course_and_re_requests_rejected_course(
+        self,
+    ):
+        """Valida que un alumno con cuenta activa pueda solicitar un curso nuevo
+        y también volver a solicitar uno previamente rechazado, bloqueando solo activos/inscritos.
+        """
+
+        class TestBase(DeclarativeBase):
+            pass
+
+        class TestAuth(TestBase):
+            __tablename__ = "auth"
+            id: Mapped[int] = mapped_column(
+                Integer, primary_key=True, autoincrement=True
+            )
+            email: Mapped[str] = mapped_column(String(255), nullable=False)
+            institute: Mapped[InstitutesEnum] = mapped_column(
+                Enum(InstitutesEnum), nullable=False
+            )
+            is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+            profile: Mapped["TestProfile"] = relationship(
+                back_populates="auth", uselist=False
+            )
+            student_course_requests: Mapped[list["TestStudentRequest"]] = relationship(
+                back_populates="auth"
+            )
+
+        class TestProfile(TestBase):
+            __tablename__ = "user_profiles"
+            id: Mapped[int] = mapped_column(
+                Integer, primary_key=True, autoincrement=True
+            )
+            auth_id: Mapped[int] = mapped_column(ForeignKey("auth.id"), nullable=False)
+            name: Mapped[str] = mapped_column(String(100), nullable=False)
+            last_name: Mapped[str] = mapped_column(String(100), nullable=False)
+            role: Mapped[AccountRoleEnum] = mapped_column(
+                Enum(AccountRoleEnum), nullable=False
+            )
+            auth: Mapped["TestAuth"] = relationship(back_populates="profile")
+
+        class TestStudentRequest(TestBase):
+            __tablename__ = "student_course_requests"
+            id: Mapped[int] = mapped_column(
+                Integer, primary_key=True, autoincrement=True
+            )
+            auth_id: Mapped[int] = mapped_column(ForeignKey("auth.id"), nullable=False)
+            moodle_course_id: Mapped[int] = mapped_column(Integer, nullable=False)
+            status: Mapped[RequestStatusEnum] = mapped_column(
+                Enum(RequestStatusEnum), nullable=False
+            )
+            auth: Mapped["TestAuth"] = relationship(
+                back_populates="student_course_requests"
+            )
+
+        engine = create_engine("sqlite:///:memory:")
+        TestBase.metadata.create_all(engine)
+        session_local = sessionmaker(bind=engine)
+        session = session_local()
+
+        try:
+            # 1. Crear alumno existente con 1 curso inscrito (10) y 1 curso rechazado (20)
+            auth = TestAuth(
+                email="alumno.existente@unam.mx",
+                institute=InstitutesEnum.PRINCIPAL,
+                is_active=True,
+            )
+            session.add(auth)
+            session.flush()
+
+            session.add(
+                TestProfile(
+                    auth_id=auth.id,
+                    name="Pedro",
+                    last_name="Ramírez",
+                    role=AccountRoleEnum.ALUMNO,
+                )
+            )
+            session.add(
+                TestStudentRequest(
+                    auth_id=auth.id,
+                    moodle_course_id=10,
+                    status=RequestStatusEnum.ENROLLED,
+                )
+            )
+            session.add(
+                TestStudentRequest(
+                    auth_id=auth.id,
+                    moodle_course_id=20,
+                    status=RequestStatusEnum.REJECTED,
+                )
+            )
+            session.commit()
+
+            # Apuntar los modelos del repositorio a las tablas de prueba en SQLite
+            with (
+                patch(
+                    "app.modules.register.repositories.authenticated_student_request_repository.Auth",
+                    TestAuth,
+                ),
+                patch(
+                    "app.modules.register.repositories.authenticated_student_request_repository.StudentCourseRequest",
+                    TestStudentRequest,
+                ),
+            ):
+                controller = AuthenticatedStudentRequestController(db=session)
+                controller.repository = AuthenticatedStudentRequestRepository(session)
+                user_token = build_fake_user(auth_id=auth.id, email=auth.email)
+
+                # 2. Solicitar un curso nuevo (30) -> Debe permitirlo
+                res_new = await controller.request_student_course(
+                    data=AuthenticatedStudentRequestSchema(course_id=30),
+                    user_info=user_token,
+                )
+                self.assertEqual(
+                    res_new["message"], "Solicitud de curso registrada correctamente."
+                )
+
+                # 3. Volver a solicitar el curso rechazado (20) -> Debe permitirlo
+                res_retry = await controller.request_student_course(
+                    data=AuthenticatedStudentRequestSchema(course_id=20),
+                    user_info=user_token,
+                )
+                self.assertEqual(
+                    res_retry["message"], "Solicitud de curso registrada correctamente."
+                )
+
+                # 4. Intentar solicitar el curso donde ya está ENROLLED (10) -> Debe bloquearlo
+                with self.assertRaises(HTTPException) as ctx:
+                    await controller.request_student_course(
+                        data=AuthenticatedStudentRequestSchema(course_id=10),
+                        user_info=user_token,
+                    )
+                self.assertEqual(ctx.exception.status_code, 400)
+        finally:
+            session.close()
 
     async def test_get_user_info_by_token_valid_and_expired(self):
         """Valida recuperación de información por token y detección de expiración."""
