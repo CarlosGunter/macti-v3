@@ -20,7 +20,10 @@ class AuthenticatedStudentRequestRepository:
         return (
             self.db.query(Auth)
             .filter(Auth.id == auth_id)
-            .options(joinedload(Auth.profile))
+            .options(
+                joinedload(Auth.profile),
+                joinedload(Auth.student_course_requests),
+            )
             .one_or_none()
         )
 
@@ -42,7 +45,12 @@ class AuthenticatedStudentRequestRepository:
         course_id: int,
         institute: InstitutesEnum,
     ) -> bool:
-        """Valida si ya existe una solicitud del usuario para el mismo curso e instituto."""
+        """Valida si ya existe una solicitud activa o aprobada del usuario para el mismo curso."""
+        active_statuses = (
+            RequestStatusEnum.PENDING,
+            RequestStatusEnum.APPROVED,
+            RequestStatusEnum.ENROLLED,
+        )
         request_id = (
             self.db.query(StudentCourseRequest.id)
             .join(Auth, StudentCourseRequest.auth_id == Auth.id)
@@ -50,8 +58,9 @@ class AuthenticatedStudentRequestRepository:
                 Auth.id == auth_id,
                 Auth.institute == institute,
                 StudentCourseRequest.moodle_course_id == course_id,
+                StudentCourseRequest.status.in_(active_statuses),
             )
-            .one_or_none()
+            .first()
         )
 
         return request_id is not None
