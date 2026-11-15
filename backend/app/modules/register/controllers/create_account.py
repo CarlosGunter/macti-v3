@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from fastapi import HTTPException
+from fastapi import BackgroundTasks, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.logging.macti_logger import (
@@ -39,15 +39,20 @@ class CreateAccountController:
     """
 
     @staticmethod
-    async def create_account(data: CreateAccountSchema, db: Session) -> dict[str, Any]:
+    async def create_account(
+        data: CreateAccountSchema,
+        db: Session,
+        background_tasks: BackgroundTasks | None = None,
+    ) -> dict[str, Any]:
         """Flujo principal de creación de cuenta.
 
         Args:
             data: `CreateAccountSchema` con `user_id`, `new_password` y `token`.
             db: Sesión de SQLAlchemy.
+            background_tasks: Gestor opcional de tareas secundarias de FastAPI.
 
         Returns:
-            Diccionario con IDs creados y mensaje de éxito.
+            Diccionario con mensaje de éxito.
         """
         repo = CreateAccountRepository(db)
 
@@ -132,29 +137,69 @@ class CreateAccountController:
             extra={"service": "Moodle", "institute": auth.institute.value},
         )
 
-        # Forzamos la limpieza del texto del rol antes del bloque try para garantizar enlace en Pyright
+        # Extracción de datos planos antes de finalizar la sesión de BD para la tarea en segundo plano
         rol_actual = str(getattr(auth.profile, "role", "")).lower()
         if "docente" in rol_actual:
             rol_actual = "docente"
 
-        try:
-            # Recuperamos los nombres reales de la DB de MACTI
-            first_name = getattr(auth.profile, "name", "")
-            last_name = getattr(auth.profile, "last_name", "")
+        user_email = str(auth.email)
+        first_name = str(getattr(auth.profile, "name", ""))
+        last_name = str(getattr(auth.profile, "last_name", ""))
+        institute_value = auth.institute.value
 
-            # Enviamos el rol y los nombres reales directamente a la API de JupyterHub
-            await JupyterService.sync_user_role(
-                email=auth.email,
+        # Finalizar: actualizar estados y limpiar token
+        CreateAccountController._finalize_transaction(
+            repo=repo, auth=auth, kc_user_id=kc_user_id, moodle_user_id=moodle_user_id
+        )
+
+        # Delegar sincronización con JupyterHub a segundo plano para no bloquear la respuesta HTTP
+        if background_tasks is not None:
+            background_tasks.add_task(
+                CreateAccountController._sync_jupyter_background,
+                email=user_email,
                 role=rol_actual,
+                first_name=first_name,
+                last_name=last_name,
+            )
+        else:
+            await CreateAccountController._sync_jupyter_background(
+                email=user_email,
+                role=rol_actual,
+                first_name=first_name,
+                last_name=last_name,
+            )
+
+        log_info(
+            logger_name=LOGGER_NAME,
+            message="Transacción finalizada: cuenta aprovisionada y activada correctamente",
+            extra={"institute": institute_value},
+        )
+
+        return {"message": "Cuenta creada exitosamente"}
+
+    @staticmethod
+    async def _sync_jupyter_background(
+        email: str,
+        role: str,
+        first_name: str,
+        last_name: str,
+    ) -> None:
+        """
+        Tarea secundaria en segundo plano para sincronizar el rol y metadatos
+        del usuario con JupyterHub sin bloquear la respuesta al cliente.
+        """
+        try:
+            await JupyterService.sync_user_role(
+                email=email,
+                role=role,
                 first_name=first_name,
                 last_name=last_name,
             )
             log_info(
                 logger_name=LOGGER_NAME,
                 message="Rol y datos de usuario sincronizados exitosamente con JupyterHub",
-                extra={"service": "JupyterHub", "role": rol_actual},
+                extra={"service": "JupyterHub", "role": role},
             )
-
         except Exception as e:
             log_service_error(
                 logger_name=LOGGER_NAME,
@@ -162,23 +207,10 @@ class CreateAccountController:
                 endpoint="sync_user_role",
                 error_message=str(e),
                 extra={
-                    "reason": "Error inesperado al sincronizar rol con JupyterHub",
-                    "role": rol_actual,
+                    "reason": "Error inesperado al sincronizar rol con JupyterHub en segundo plano",
+                    "role": role,
                 },
             )
-
-        # Finalizar: actualizar estados y limpiar token
-        CreateAccountController._finalize_transaction(
-            repo=repo, auth=auth, kc_user_id=kc_user_id, moodle_user_id=moodle_user_id
-        )
-
-        log_info(
-            logger_name=LOGGER_NAME,
-            message="Transacción finalizada: cuenta aprovisionada y activada correctamente",
-            extra={"institute": auth.institute.value},
-        )
-
-        return {"message": "Cuenta creada exitosamente"}
 
     @staticmethod
     def _validate_verification_tokens(auth: Auth, token: UUID) -> None:
