@@ -40,8 +40,10 @@ src/
     ├── components/       # Componentes UI con identidad MACTI (common, feedback, ui)
     ├── shadcn/           # Primitivos atómicos y accesibles de Shadcn / Radix UI
     ├── config/           # Configuraciones y constantes globales
+    ├── hooks/            # Hooks reutilizables (useDebounce, useDebouncedSearch)
     ├── providers/        # Proveedores de contexto de React y React Query
-    └── utils/            # Funciones auxiliares puras (processFetch, tryCatch)
+    ├── schemas/          # Esquemas compartidos de validación (paginationSchema)
+    └── utils/            # Funciones auxiliares puras (processFetch, tryCatch, query-params)
 ```
 
 ---

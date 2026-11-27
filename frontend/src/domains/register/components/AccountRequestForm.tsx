@@ -1,10 +1,12 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Form from "next/form";
 import { useActionState, useState } from "react";
 import Button from "@/shared/components/ui/Button";
+import { SearchInput } from "@/shared/components/ui/SearchInput";
 import { institutes } from "@/shared/config/institutes";
+import { useDebouncedSearch } from "@/shared/hooks/useDebouncedSearch";
 import {
   Field,
   FieldContent,
@@ -26,11 +28,15 @@ import {
 import { accountRequestAction } from "../actions/accountRequestAction";
 import { fetchCoursesClient } from "../services/fetchCoursesClient";
 
+/** Límite máximo permitido por el backend para cargar el selector de cursos en registro. */
+const REGISTER_COURSES_LIMIT = 100;
+
 /**
  * Formulario de solicitud de cuenta para estudiantes.
- * Permite seleccionar el instituto, el curso deseado e ingresar datos personales.
+ * Permite seleccionar el instituto, filtrar y elegir el curso deseado mediante
+ * búsqueda debounced e ingresar datos personales.
  *
- * @param props - Propiedades del componente con el instituto predeterminado.
+ * @param props Propiedades del componente con el instituto predeterminado.
  * @returns Componente de formulario de solicitud de cuenta.
  */
 export default function AccountRequestForm({ institute }: { institute: string }) {
@@ -39,20 +45,46 @@ export default function AccountRequestForm({ institute }: { institute: string })
   const [selectedInstitute, setSelectedInstitute] = useState(
     institute || (state?.data?.institute as string) || "",
   );
+  const [selectedCourseId, setSelectedCourseId] = useState(
+    (state?.data?.course_id as string) || "",
+  );
 
   const {
-    data: courses,
+    search: courseSearch,
+    debouncedSearch: debouncedCourseSearch,
+    isDebouncing: isCourseSearchDebouncing,
+    setSearch: setCourseSearch,
+    resetSearch,
+  } = useDebouncedSearch({ limit: REGISTER_COURSES_LIMIT });
+
+  const {
+    data: coursesResponse,
     isLoading: coursesLoading,
+    isFetching: coursesFetching,
     error: coursesError,
   } = useQuery({
-    queryKey: ["courses", selectedInstitute],
-    queryFn: async () => {
-      const result = await fetchCoursesClient({ institute: selectedInstitute });
+    queryKey: ["courses", selectedInstitute, debouncedCourseSearch],
+    queryFn: async ({ signal }) => {
+      const result = await fetchCoursesClient({
+        institute: selectedInstitute,
+        search: debouncedCourseSearch,
+        limit: REGISTER_COURSES_LIMIT,
+        signal,
+      });
       if (!result) throw new Error("No se pudieron cargar los cursos");
       return result;
     },
+    placeholderData: keepPreviousData,
     enabled: !!selectedInstitute,
   });
+
+  const courses = coursesResponse?.items;
+
+  const handleInstituteChange = (nextInstitute: string) => {
+    setSelectedInstitute(nextInstitute);
+    setSelectedCourseId("");
+    resetSearch();
+  };
 
   return (
     <Form action={formAction} disabled={isPending} className="w-full">
@@ -74,7 +106,7 @@ export default function AccountRequestForm({ institute }: { institute: string })
               <Select
                 name="institute"
                 value={selectedInstitute}
-                onValueChange={setSelectedInstitute}
+                onValueChange={handleInstituteChange}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecciona un instituto" />
@@ -92,9 +124,21 @@ export default function AccountRequestForm({ institute }: { institute: string })
 
             <Field>
               <FieldLabel>Curso</FieldLabel>
+              {selectedInstitute && (
+                <SearchInput
+                  value={courseSearch}
+                  onChange={setCourseSearch}
+                  onClear={resetSearch}
+                  placeholder="Filtrar curso por nombre o clave..."
+                  ariaLabel="Filtrar cursos disponibles"
+                  isLoading={isCourseSearchDebouncing || coursesFetching}
+                  className="mb-2"
+                />
+              )}
               <Select
                 name="course_id"
-                defaultValue={state?.data?.course_id as string}
+                value={selectedCourseId}
+                onValueChange={setSelectedCourseId}
                 disabled={!selectedInstitute || coursesLoading}
               >
                 <SelectTrigger className="w-full">

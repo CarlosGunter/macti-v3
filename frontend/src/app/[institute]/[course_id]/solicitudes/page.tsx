@@ -22,7 +22,7 @@ export default async function SolicitudesPage({ params }: SolicitudesPageProps) 
         institute,
         ids: [parseInt(course_id, 10)],
       })
-    )?.[0] ?? null;
+    )?.items[0] ?? null;
 
   return (
     <div className="grid gap-6 w-full max-w-7xl mx-auto">

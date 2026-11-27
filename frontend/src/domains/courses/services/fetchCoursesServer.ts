@@ -1,12 +1,34 @@
+import type { PaginatedSearchParams } from "@/shared/schemas/paginationSchema";
 import { processFetch } from "@/shared/utils/process-fetch";
-import { listCoursesSchema } from "../schemas/listCoursesSchema";
+import { appendPaginatedSearchParams } from "@/shared/utils/query-params";
+import {
+  listCoursesSchema,
+  type PaginatedCoursesResponse,
+} from "../schemas/listCoursesSchema";
 
-interface FetchCoursesServerPayload {
+/**
+ * Parámetros de consulta en servidor para el catálogo de cursos de un instituto.
+ */
+interface FetchCoursesServerPayload extends PaginatedSearchParams {
+  /** Identificador del instituto a consultar. */
   institute: string;
+  /** Lista opcional de IDs de cursos para filtrar resultados. */
   ids?: number[];
 }
 
-export async function fetchCoursesServer({ institute, ids }: FetchCoursesServerPayload) {
+/**
+ * Consulta la lista paginada de cursos disponibles desde el servidor para un instituto.
+ *
+ * @param payload Parámetros de instituto, filtrado por IDs, búsqueda y paginación.
+ * @returns Respuesta paginada validada o `undefined` si ocurre un error de red o contrato.
+ */
+export async function fetchCoursesServer({
+  institute,
+  ids,
+  search,
+  page,
+  limit,
+}: FetchCoursesServerPayload): Promise<PaginatedCoursesResponse | undefined> {
   const queryParams = new URLSearchParams({ institute });
   if (ids && Array.isArray(ids)) {
     ids.forEach((id) => {
@@ -14,8 +36,10 @@ export async function fetchCoursesServer({ institute, ids }: FetchCoursesServerP
     });
   }
 
+  appendPaginatedSearchParams(queryParams, { search, page, limit });
+
   const listCoursesPromise = fetch(
-    `${process.env.K8S_API_URL}/courses?${queryParams.toString()}`,
+    `${process.env.K8S_API_URL}/courses/?${queryParams.toString()}`,
     {
       method: "GET",
       next: { revalidate: 300 },
