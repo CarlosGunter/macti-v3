@@ -1,20 +1,29 @@
 import { BookOpen, Mail, Users } from "lucide-react";
 import Link from "next/link";
 import { STATUS_BADGE_LABELS, USER_ROLES } from "../../constants";
-import type { CourseRequestsTeachersProps } from "../../schemas/courseRequestsTeachersSchema";
+import type { CourseRequestTeacher } from "../../schemas/courseRequestsTeachersSchema";
 import CourseRequestStatusActions from "./CourseRequestStatusActions";
 
-type TeacherCourseRequest = CourseRequestsTeachersProps[number];
-
+/**
+ * Propiedades del componente {@link TeacherCourseRequestCard}.
+ */
 interface TeacherCourseRequestCardProps {
-  request: TeacherCourseRequest;
+  /** Datos del docente y de su solicitud de curso. */
+  request: CourseRequestTeacher;
 }
 
+/**
+ * Tarjeta que muestra el detalle de una solicitud de curso realizada por un docente
+ * junto con las acciones disponibles para actualizar su estado.
+ *
+ * @param props Propiedades con la información de la solicitud docente.
+ * @returns Elemento `<article>` con los datos del docente, curso solicitado, grupos y acciones.
+ */
 export default function TeacherCourseRequestCard({
   request,
 }: TeacherCourseRequestCardProps) {
   const { user, courses } = request;
-  const titleId = `teacher-course-request-${user.id}`;
+  const titleId = `teacher-course-request-${user.id}-${courses.id}`;
 
   return (
     <article
