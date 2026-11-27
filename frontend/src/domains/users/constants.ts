@@ -1,3 +1,9 @@
+/**
+ * Cantidad máxima de solicitudes de cuenta solicitadas por página.
+ * Coincide con el valor por defecto del backend (`limit = 10`).
+ */
+export const ACCOUNT_REQUESTS_PAGE_LIMIT = 10;
+
 export const USER_STATUSES = Object.freeze({
   PENDING: "pending",
   APPROVED: "approved",
