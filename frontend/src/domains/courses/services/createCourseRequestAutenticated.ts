@@ -26,7 +26,7 @@ export async function createCourseRequestAutenticated({
   courseRequestData,
   headers,
 }: CreateCourseRequestAutenticatedProps) {
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  const basePath = process.env.NEXT_PUBLIC_APP_URL;
   const queryParams = new URLSearchParams({ institute });
 
   const courseRequestAutenticatedPromise = fetch(

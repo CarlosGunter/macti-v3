@@ -66,12 +66,6 @@ function CreateDialog({ institute }: CreateCourseRequestAutenticatedDialogProps)
     null,
   );
 
-  useEffect(() => {
-    if (state?.success) {
-      setOpen(false);
-    }
-  }, [state?.success]);
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
