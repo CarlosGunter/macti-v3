@@ -25,6 +25,9 @@ export const metadata: Metadata = {
   title: "MACTI",
   description:
     "MACTI es una plataforma que alberga materiales didácticos haciendo énfasis en ejemplos prácticos y aplicaciones de conceptos abstractos para los cursos semestrales de análisis Numérico y Ecuaciones Diferenciales.",
+  appleWebApp: {
+    title: "MACTI",
+  },
 };
 
 export default function RootLayout({
